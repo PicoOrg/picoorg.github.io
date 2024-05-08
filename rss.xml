@@ -1,4 +1,232 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>OAuth2攻击面分析</title><link>https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><description>本文主要梳理OAuth2常见攻击手段，并且结合实际案例进行分析。</description><pubDate>Tue, 07 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>CVE-2024-2887 Chrome Type Confusion漏洞分析</title><link>https://picoorg.github.io/posts/cve-2024-2887/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2024-2887/</guid><description>本文主要翻译了ZDI博客内容，水平有限以理解为主，后续计划增补PoC和补丁分析。</description><pubDate>Wed, 08 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#1-%E7%AE%80%E4%BB%8B&quot;&gt;1. 简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#2-%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0&quot;&gt;2. 漏洞成因&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#3-%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8&quot;&gt;3. 漏洞利用&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#31-%E6%BC%8F%E6%B4%9E%E5%BD%B1%E5%93%8D%E8%8C%83%E5%9B%B4&quot;&gt;3.1. 漏洞影响范围&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#32-%E9%80%9A%E7%94%A8webassembly-type-confusion&quot;&gt;3.2. 通用WebAssembly type confusion&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#33-%E6%95%B4%E6%95%B0%E4%B8%8B%E6%BA%A2%E5%AF%BC%E8%87%B4v8%E6%B2%99%E7%AE%B1%E9%80%83%E9%80%B8&quot;&gt;3.3. 整数下溢导致V8沙箱逃逸&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#34-%E4%BB%BB%E6%84%8Fshellcode%E6%89%A7%E8%A1%8C&quot;&gt;3.4. 任意Shellcode执行&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#4-%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99&quot;&gt;4. 参考资料&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;1. 简介&lt;/h1&gt;
+&lt;p&gt;原文主要是介绍Pwn2Own的Master of Pwn获奖者Manfred Paul的漏洞发现和漏洞利用过程，该漏洞类型为&lt;code&gt;type confusion&lt;/code&gt;，可同时在Chrome和Edge (Chromium)触发。&lt;/p&gt;
+&lt;p&gt;漏洞存在于V8 JavaScript和WebAssembly引擎中，允许绕过V8内存沙箱（&lt;a href=&quot;https://docs.google.com/document/d/1FM4fQmIhEqPG8uGp5o9A-mnPB5BOeScZYpkHjo0KKA8/edit#heading=h.xzptrog8pyxf&quot;&gt;Ubercage&lt;/a&gt;），但受限于基于进程隔离的浏览器沙箱。在演示过程中通过使用--no-sandbox移除了这个限制。&lt;/p&gt;
+&lt;h1&gt;2. 漏洞成因&lt;/h1&gt;
+&lt;p&gt;WebAssembly模块包含一个&lt;code&gt;Type section&lt;/code&gt;用来给出自定义heap types，在一开始只用来定义&lt;code&gt;function types/aggregate types/external types&lt;/code&gt;三种类型（原文只提到一种类型），但在引入&lt;a href=&quot;https://webassembly.github.io/gc/core/_download/WebAssembly.pdf&quot;&gt;垃圾回收（GC）提案&lt;/a&gt;后，可以定义结构体类型，允许在WebAssembly中使用复合的、堆分配的类型。&lt;/p&gt;
+&lt;p&gt;通常，结构体只能引用其前面声明的结构体。但为了支持相互递归的数据结构，新增了一个特性recursive type groups，该特性支持将递归类型组整体声明而不是每个类型单独声明。在该组中，各个类型允许相互引用。&lt;/p&gt;
+&lt;p&gt;据此，考虑在&lt;code&gt;v8/src/wasm/module-decoder-impl.h&lt;/code&gt;中负责从WebAssembly解析&lt;code&gt;Type section&lt;/code&gt;的函数：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// 调整了一下原文缩进
+void DecodeTypeSection() { 
+    TypeCanonicalizer* type_canon = GetTypeCanonicalizer(); 
+    uint32_t types_count = consume_count(&quot;types count&quot;, kV8MaxWasmTypes); // (1) 
+ 
+    for (uint32_t i = 0; ok() &amp;amp;&amp;amp; i &amp;lt; types_count; ++i) {  
+        ... 
+        uint8_t kind = read_u8&amp;lt;Decoder::FullValidationTag&amp;gt;(pc(), &quot;type kind&quot;);  
+        size_t initial_size = module_-&amp;gt;types.size(); 
+        if (kind == kWasmRecursiveTypeGroupCode) { 
+            ... 
+            uint32_t group_size = 
+                    consume_count(&quot;recursive group size&quot;, kV8MaxWasmTypes); 
+            ... 
+            if (initial_size + group_size &amp;gt; kV8MaxWasmTypes) { // (2)  
+                errorf(pc(), &quot;Type definition count exceeds maximum %zu&quot;, 
+                    kV8MaxWasmTypes);  
+                return; 
+            } 
+            ... 
+            for (uint32_t j = 0; j &amp;lt; group_size; j++) { 
+                ... 
+                TypeDefinition type = consume_subtype_definition(); 
+                module_-&amp;gt;types[initial_size + j] = type; 
+            } 
+            ... 
+        } else { 
+            ... 
+            // Similarly to above, we need to resize types for a group of size 1. 
+            module_-&amp;gt;types.resize(initial_size + 1); // (3) 
+            module_-&amp;gt;isorecursive_canonical_type_ids.resize(initial_size + 1); 
+            TypeDefinition type = consume_subtype_definition(); 
+            if (ok()) {  
+                module_-&amp;gt;types[initial_size] = type; 
+                type_canon-&amp;gt;AddRecursiveSingletonGroup(module_.get()); 
+            } 
+        }  
+    } 
+    ...  
+} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在（1）处，&lt;code&gt;kV8MaxWasmTypes = 1,000,000&lt;/code&gt;限制了&lt;code&gt;Type section&lt;/code&gt;的声明总数。在（2）处进一步检查了递归类型组的大小是否超出了限制。&lt;/p&gt;
+&lt;p&gt;然而在（2）处的检查是不够的，假设在&lt;code&gt;Type section&lt;/code&gt;有两种类型声明，一种是恰好包含kV8MaxWasmTypes数量的递归类型组，另一种是非递归类型组的类型。那么（1）处的检查能够通过，因为总数为2，（2）处的检查只有第一种声明会进入，且数值刚好等于kV8MaxWasmTypes。但是在（3）处，另一种类型声明刚好触发resize，值为&lt;code&gt;kV8MaxWasmTypes + 1&lt;/code&gt;，被分配到的索引为&lt;code&gt;kV8MaxWasmTypes&lt;/code&gt;。如果有更多的非递归类型组类型声明，只会超出限制更多。&lt;/p&gt;
+&lt;h1&gt;3. 漏洞利用&lt;/h1&gt;
+&lt;h2&gt;3.1. 漏洞影响范围&lt;/h2&gt;
+&lt;p&gt;结合V8处理WebAssembly的heap types的方式，该漏洞可以构造出非常强大的漏洞利用原语，在&lt;code&gt;v8/src/wasm/value-type.h&lt;/code&gt;中，heap types的定义如下:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;class HeapType { 
+    public: 
+        enum Representation : uint32_t { kFunc = kV8MaxWasmTypes, 
+            kEq, 
+            kI31, 
+            kStruct, 
+            kArray, 
+            kAny, 
+            kExtern, 
+            ... 
+            kNone, 
+            ... 
+        };
+}; 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;此处，V8假设所有用户定义的堆类型都被分配小于&lt;code&gt;kV8MaxWasmTypes&lt;/code&gt;的索引。此时，较大的索引保留给固定的内部类型，导致我们可以使用内部类型对自定义类型定义别名，导致大量的&lt;code&gt;type confusion&lt;/code&gt;机会。&lt;/p&gt;
+&lt;h2&gt;3.2. 通用WebAssembly type confusion&lt;/h2&gt;
+&lt;p&gt;达成&lt;code&gt;type confusion&lt;/code&gt;，我们首先考虑&lt;code&gt;struct.new&lt;/code&gt;操作，它生成新结构体对象的引用，参数来自于栈上数据。调用者通过传递其类型索引来指定所需的结构类型。对类型索引的检查可以在&lt;code&gt;v8/src/wasm/function-body-decoder-impl.h&lt;/code&gt;中找到：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;bool Validate(const uint8_t* pc, StructIndexImmediate&amp;amp; imm) {  
+    if (!VALIDATE(module_-&amp;gt;has_struct(imm.index))) { 
+        DecodeError(pc, &quot;invalid struct index: %u&quot;, imm.index); 
+        return false;  
+    } 
+    imm.struct_type = module_-&amp;gt;struct_type(imm.index); 
+    return true;  
+} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;接下来的验证逻辑是&lt;code&gt;has_struct()&lt;/code&gt;函数在&lt;code&gt;v8/src/wasm/wasm-module.h&lt;/code&gt;:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;bool has_struct(uint32_t index) const { 
+    return index &amp;lt; types.size() &amp;amp;&amp;amp; types[index].kind == TypeDefinition::kStruct;  
+} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;由于我们可以使&lt;code&gt;types.size() &amp;gt; kV8MaxWasmTypes&lt;/code&gt;，因此即使传递大于该值的索引，也可以使检查通过。这允许我们创建任意内部类型的引用，该引用指向我们可以自定义的结构。&lt;/p&gt;
+&lt;p&gt;另一方面，考虑&lt;code&gt;ref.cast&lt;/code&gt;指令的处理：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+case kExprRefCast: 
+case kExprRefCastNull: {
+        ...
+        Value obj = Pop();
+
+        HeapType target_type = imm.type;
+        ...
+        if (V8_UNLIKELY(TypeCheckAlwaysSucceeds(obj, target_type))) {
+            if (obj.type.is_nullable() &amp;amp;&amp;amp; !null_succeeds) {
+                CALL_INTERFACE(AssertNotNullTypecheck, obj, value);
+            } else {
+                CALL_INTERFACE(Forward, obj, value);
+            }
+        }
+        ...
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这里，可通过构造使&lt;code&gt;TypeCheckAlwaysSucceeds&lt;/code&gt;函数返回&lt;code&gt;true&lt;/code&gt;来避免类型检查，并且该值将被简单地解释为目标类型。函数&lt;code&gt;TypeCheckAlwaysSucceeds&lt;/code&gt;最终调用&lt;code&gt;v8/src/wasm/wasm-subtyping.cc&lt;/code&gt;中定义的 &lt;code&gt;IsHeapSubtypeOfImpl&lt;/code&gt;：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;V8_NOINLINE V8_EXPORT_PRIVATE bool IsHeapSubtypeOfImpl( 
+    HeapType sub_heap, HeapType super_heap, 
+    const WasmModule* sub_module, const WasmModule* super_module) { 
+    if (IsShared(sub_heap, sub_module) != IsShared(super_heap, super_module)) { 
+        return false;  
+    } 
+    HeapType::Representation sub_repr_non_shared = 
+        sub_heap.representation_non_shared(); 
+    HeapType::Representation super_repr_non_shared = 
+        super_heap.representation_non_shared(); 
+    switch (sub_repr_non_shared) {  
+        ... 
+        case HeapType::kNone: 
+            // none is a subtype of every non-func, non-extern and non-exn reference  
+            // type under wasm-gc. 
+            if (super_heap.is_index()) { 
+                return !super_module-&amp;gt;has_signature(super_heap.ref_index()); 
+            } 
+            ... 
+    } 
+    ...  
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;这意味着，如果我们声明的类型索引为常量&lt;code&gt;HeapType::kNone&lt;/code&gt;的别名，那么当我们强制转换为任何非函数、非外部引用时，类型检查将始终被忽略。整体上，我们可以通过以下步骤，将引用类型转换为任意其他引用类型：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;Type section&lt;/code&gt;中，定义一个只有一个&lt;code&gt;anyref&lt;/code&gt;类型字段的结构体，并利用上述漏洞使该结构索引为&lt;code&gt;HeapType::kNone&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;将原始类型的非空引用放在栈顶，并调用&lt;code&gt;struct.new&lt;/code&gt;并将类型索引设置为&lt;code&gt;HeapType::kNone&lt;/code&gt;。（我理解为调用构造函数）&lt;/li&gt;
+&lt;li&gt;同时，定义一个只有一个目标类型字段的结构体，该索引小于&lt;code&gt;kV8MaxWasmTypes&lt;/code&gt;。使用&lt;code&gt;ref.cast&lt;/code&gt;将步骤2中实例化的对象转为新结构体类型。&lt;/li&gt;
+&lt;li&gt;最后，通过执行&lt;code&gt;struct.get&lt;/code&gt;读存储在结构体中的字段，即步骤2中栈上的引用，该引用已从原始类型转为目标类型。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这种将引用类型转换为任意其他引用类型，然后通过解引用将值类型转换为任意其他值类型 - 因此这是一种通用&lt;code&gt;type confusion&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;特别是，它直接包含几乎所有常见的&lt;code&gt;JavaScript&lt;/code&gt;引擎漏洞利用原语：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;将&lt;code&gt;int&lt;/code&gt;转换为&lt;code&gt;int*&lt;/code&gt;，然后解引用会导致任意读取。&lt;/li&gt;
+&lt;li&gt;将&lt;code&gt;int&lt;/code&gt;转换为&lt;code&gt;int*&lt;/code&gt;，然后写入该引用会导致任意写入。&lt;/li&gt;
+&lt;li&gt;将&lt;code&gt;externref&lt;/code&gt;转换为&lt;code&gt;int&lt;/code&gt;是&lt;code&gt;addrOf()&lt;/code&gt;原语，获取&lt;code&gt;JavaScript&lt;/code&gt;对象的地址。&lt;/li&gt;
+&lt;li&gt;将&lt;code&gt;int&lt;/code&gt;转换为&lt;code&gt;externref&lt;/code&gt;是&lt;code&gt;fakeObj()&lt;/code&gt;原语，强制引擎将任意值视为指向&lt;code&gt;JavaScript&lt;/code&gt;对象的指针。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;虽然不允许从&lt;code&gt;HeapType::kNone&lt;/code&gt;转换为&lt;code&gt;externref&lt;/code&gt;，但我们实际上通过包装引用到结构体间接操作完成&lt;code&gt;type confusion&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;这些任意读/写仍然包含在V8内存沙箱中，因为所有涉及的指向堆分配结构的指针都已标记，是沙箱化的压缩指针，而不是完整的64位原始指针。&lt;/p&gt;
+&lt;h2&gt;3.3. 整数下溢导致V8沙箱逃逸&lt;/h2&gt;
+&lt;p&gt;在V8沙箱内，我们可操作空间十分有限，诸如&lt;code&gt;WebAssembly&lt;/code&gt;实例之类的“受信任”对象尚无法被操作，因此仍需进行V8沙箱逃逸。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;JavaScript&lt;/code&gt;引擎漏洞利用的一个常用对象是&lt;code&gt;ArrayBuffer&lt;/code&gt;及其相应views（即&lt;code&gt;TypedArray&lt;/code&gt;），因为它允许直接、无标记地访问某些内存区域。&lt;/p&gt;
+&lt;p&gt;为了防止访问V8沙箱外部的指针，用沙箱化指针对&lt;code&gt;TypedArray&lt;/code&gt;进行访问限制。同时，&lt;code&gt;ArrayBuffer&lt;/code&gt;的长度字段始终存在“有限大小访问”限制，本质上是&lt;code&gt;2^53-1&lt;/code&gt;。（参考&lt;a href=&quot;https://stackoverflow.com/questions/17823225/do-arraybuffers-have-a-maximum-length&quot;&gt;StackOverflow&lt;/a&gt;，原文此处有误）&lt;/p&gt;
+&lt;p&gt;然而，在现代&lt;code&gt;JavaScript&lt;/code&gt;中，由于引入了可调整大小的&lt;code&gt;ArrayBuffer(RAB)&lt;/code&gt;及其可共享变体、可增长的&lt;code&gt;SharedArrayBuffer(GSAB)&lt;/code&gt;，&lt;code&gt;TypedArray&lt;/code&gt;的处理变得相当复杂。这两种变体都具有在创建对象后更改其长度的能力，并且共享变体被限制为永不缩容。特别是，对于具有此类缓冲区的&lt;code&gt;TypedArray&lt;/code&gt;，数组长度永远无法被缓存，并且必须在每次访问时重新计算。&lt;/p&gt;
+&lt;p&gt;此外，&lt;code&gt;ArrayBuffers&lt;/code&gt;还具有一个偏移字段，记录实际底层后备存储中数据的开始，计算长度时必须考虑此偏移。&lt;/p&gt;
+&lt;p&gt;以下是在&lt;code&gt;Turbofan&lt;/code&gt;编译器优化后的，负责获取&lt;code&gt;TypedArray&lt;/code&gt;长度的代码，具体在&lt;code&gt;v8/src/compiler/graph-assembler.cc&lt;/code&gt;中：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;TNode&amp;lt;UintPtrT&amp;gt; BuildLength(TNode&amp;lt;JSArrayBufferView&amp;gt; view, 
+                              TNode&amp;lt;Context&amp;gt; context) { 
+    ... 
+    // 3) Length-tracking backed by RAB (JSArrayBuffer stores the length) 
+    auto RabTracking = [&amp;amp;]() { 
+        TNode&amp;lt;UintPtrT&amp;gt; byte_length = MachineLoadField&amp;lt;UintPtrT&amp;gt;( 
+            AccessBuilder::ForJSArrayBufferByteLength(), buffer, UseInfo::Word()); 
+        TNode&amp;lt;UintPtrT&amp;gt; byte_offset = MachineLoadField&amp;lt;UintPtrT&amp;gt;( 
+            AccessBuilder::ForJSArrayBufferViewByteOffset(), view, 
+            UseInfo::Word()); 
+    
+        return a
+            .MachineSelectIf&amp;lt;UintPtrT&amp;gt;( // (1)  
+                a.UintPtrLessThanOrEqual(byte_offset, byte_length)) 
+            .Then([&amp;amp;]() { 
+                // length = floor((byte_length - byte_offset) / element_size) 
+                return a.UintPtrDiv(a.UintPtrSub(byte_length, byte_offset),  
+                                    a.ChangeUint32ToUintPtr(element_size)); 
+            }) 
+            .Else([&amp;amp;]() { return a.UintPtrConstant(0); })  
+            .ExpectTrue() 
+            .Value();  
+    };  
+ 
+     // 4) Length-tracking backed by GSAB (BackingStore stores the length) 
+    auto GsabTracking = [&amp;amp;]() { 
+        TNode&amp;lt;Number&amp;gt; temp = TNode&amp;lt;Number&amp;gt;::UncheckedCast(a.TypeGuard(  
+                TypeCache::Get()-&amp;gt;kJSArrayBufferViewByteLengthType, 
+                a.JSCallRuntime1(Runtime::kGrowableSharedArrayBufferByteLength, 
+                                buffer, context, base::nullopt, 
+                                Operator::kNoWrite))); 
+            TNode&amp;lt;UintPtrT&amp;gt; byte_length = 
+                a.EnterMachineGraph&amp;lt;UintPtrT&amp;gt;(temp, UseInfo::Word()); 
+            TNode&amp;lt;UintPtrT&amp;gt; byte_offset = MachineLoadField&amp;lt;UintPtrT&amp;gt;( 
+                AccessBuilder::ForJSArrayBufferViewByteOffset(), view, 
+        UseInfo::Word());  
+        // (2)  
+        return a.UintPtrDiv(a.UintPtrSub(byte_length, byte_offset), 
+                            a.ChangeUint32ToUintPtr(element_size));  
+    };  
+    ...  
+} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;对于&lt;code&gt;RAB ArrayBuffer&lt;/code&gt;数组，我们可以在(1)中看到长度的计算公式为&lt;code&gt;Floor((byte_length - byte_offset) / element_size)&lt;/code&gt;。但有一个下溢检查，即若&lt;code&gt;byte_offset &amp;gt; byte_length&lt;/code&gt;，则返回0。&lt;/p&gt;
+&lt;p&gt;但对于&lt;code&gt;GSAB ArrayBuffer&lt;/code&gt;数组，缺少相应的下溢检查。因此，如果&lt;code&gt;byte_offset &amp;gt; byte_length&lt;/code&gt;，则会发生下溢，并且将返回接近&lt;code&gt;2^64&lt;/code&gt;的无符号64位整型值。由于这两个字段都能在攻击者控制的数组对象中找到，因此我们可以使用前面讨论的沙箱任意读/写原语轻松触发此操作，进而导致可访问整个64位地址空间。&lt;/p&gt;
+&lt;h2&gt;3.4. 任意Shellcode执行&lt;/h2&gt;
+&lt;p&gt;使用上述两个BUG，利用变得相当简单:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;通用&lt;code&gt;WebAssembly type confusion&lt;/code&gt;部分中描述的原语直接给出了V8内存沙箱的任意读/写。&lt;/li&gt;
+&lt;li&gt;然后，将其用于操作&lt;code&gt;GSAB SharedArrayBuffer&lt;/code&gt;使其偏移量大于其长度。&lt;/li&gt;
+&lt;li&gt;之后，可以使用&lt;code&gt;JIT&lt;/code&gt;编译的读/写函数来访问和覆盖进程地址空间中任何位置的数据。&lt;/li&gt;
+&lt;li&gt;最后，&lt;code&gt;WebAssembly&lt;/code&gt;模块的编译代码是覆盖的合适目标，因为它在&lt;code&gt;RWX Page&lt;/code&gt;中，并且可以用&lt;code&gt;shellcode&lt;/code&gt;覆盖。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1&gt;4. 参考资料&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://nvd.nist.gov/vuln/detail/CVE-2024-2887&quot;&gt;CVE-2024-2887 Detail - NVD&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.zerodayinitiative.com/blog/2024/5/2/cve-2024-2887-a-pwn2own-winning-bug-in-google-chrome&quot;&gt;CVE-2024-2887: A PWN2OWN WINNING BUG IN GOOGLE CHROME&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/v8/v8&quot;&gt;v8/v8: The official mirror of the V8 Git repository&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://docs.google.com/document/d/1FM4fQmIhEqPG8uGp5o9A-mnPB5BOeScZYpkHjo0KKA8/edit#heading=h.xzptrog8pyxf&quot;&gt;V8 Sandbox - High-Level Design Doc&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://webassembly.github.io/gc/core/_download/WebAssembly.pdf&quot;&gt;WebAssembly Specification: Release 2.0 + tail calls + function references + gc (Draft 2024-04-28)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/17823225/do-arraybuffers-have-a-maximum-length&quot;&gt;javascript - Do ArrayBuffers have a maximum length? - Stack Overflow&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>OAuth2攻击面分析</title><link>https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><description>本文主要梳理OAuth2常见攻击手段，并且结合实际案例进行分析。</description><pubDate>Tue, 07 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E5%89%8D%E8%A8%80&quot;&gt;1. 前言&lt;/a&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#11-oauth-10%E6%BC%8F%E6%B4%9Esession-fixation-attack%E5%88%86%E6%9E%90&quot;&gt;1.1. OAuth 1.0漏洞(Session Fixation Attack)分析&lt;/a&gt;&lt;/li&gt;
