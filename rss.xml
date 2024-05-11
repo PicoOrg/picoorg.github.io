@@ -500,4 +500,232 @@ case kExprRefCastNull: {
 &lt;li&gt;&lt;a href=&quot;https://www.ruanyifeng.com/blog/2019/04/oauth_design.html&quot;&gt;OAuth 2.0 的一个简单解释&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://openid.net/connect/&quot;&gt;OpenID Connect&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</content:encoded></item><item><title>cheetsheet/index</title><link>https://picoorg.github.io/posts/cheetsheet/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cheetsheet/</guid><description>CheetSheet，快速检索常见Tips。</description><pubDate>Sat, 11 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#1-%E4%BB%A3%E7%90%86&quot;&gt;1. 代理&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#11-ssh&quot;&gt;1.1. ssh&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#2-android&quot;&gt;2. Android&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#21-adb&quot;&gt;2.1. adb&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#22-fastboot&quot;&gt;2.2. fastboot&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#23-%E9%80%86%E5%90%91&quot;&gt;2.3. 逆向&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#3-frida&quot;&gt;3. Frida&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#31-%E5%A0%86%E6%A0%88%E6%89%93%E5%8D%B0&quot;&gt;3.1. 堆栈打印&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#4-windows&quot;&gt;4. Windows&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#41-hyper-v&quot;&gt;4.1. hyper-v&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#5-%E8%AF%81%E4%B9%A6&quot;&gt;5. 证书&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#51-openssl&quot;&gt;5.1. openssl&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#6-docker&quot;&gt;6. Docker&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#61-docker-desktop-version-on-mac&quot;&gt;6.1. Docker Desktop version on Mac&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#7-linux&quot;&gt;7. Linux&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#71-%E6%89%A9%E5%AE%B9&quot;&gt;7.1. 扩容&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#72-%E8%87%AA%E5%8A%A8%E6%8C%82%E8%BD%BD&quot;&gt;7.2. 自动挂载&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#73-%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%93%8D%E4%BD%9C&quot;&gt;7.3. 命令行操作&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#8-mysql&quot;&gt;8. Mysql&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#9-nodejs&quot;&gt;9. NodeJS&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#91-elecetron%E5%8F%8D%E7%BC%96%E8%AF%91&quot;&gt;9.1. elecetron反编译&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#10-%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE&quot;&gt;10. 参考文献&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;1. 代理&lt;/h1&gt;
+&lt;h2&gt;1.1. ssh&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;socks5走ssh隧道实现代理&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&quot;./ssh_socks5_proxy_linux.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# -D：指定本地监听IP和端口
+# -q：静默模式
+# -C：压缩节约带宽
+# -N：不执行远端命令，仅转发流量
+# -f：在后台运行
+# user@remote：远程用户@远程主机
+ssh -D 0.0.0.0:1337 -q -C -N -f user@remote
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;其他&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;# 本地端口转发 ssh -LNf local-port:target-host:target-port tunnel-host
+# -L：转发本地端口。
+# -N：不发送任何命令，只用来建立连接。没有这个参数，会在 SSH 服务器打开一个 Shell。
+# -f：将 SSH 连接放到后台。没有这个参数，暂时不用 SSH 连接时，终端会失去响应。
+ssh -L 3306:192.168.31.194:3306 root@127.0.0.1 
+
+# 远程端口转发 ssh -R target-port:local-host:local-port tunnel-host
+# -R：转发远程端口。
+ssh -R 9999:192.168.2.3:9999 root@1.1.1.1
+
+# 通过~/.ssh/config配置github代理
+#Host github.com
+#    HostName github.com
+#    ProxyCommand nc -v -X connect -x 127.0.0.1:9999 %h %p
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;2. Android&lt;/h1&gt;
+&lt;h2&gt;2.1. adb&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;adb reboot bootloader              # 进入fastboot
+
+adb shell am start -a android.intent.action.VIEW -d scheme:// # 访问指定url
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;2.2. fastboot&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;fastboot reboot                    # 重启
+fastboot boot boot.img             # 临时进入boot镜像
+fastboot flash boot boot.img       # 刷入boot镜像
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;2.3. 逆向&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Android Backup包&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;java -jar abe.jar unpack cat.ab cat.tar # Android Backup包转换
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;jadx&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;jadx-gui --show-bad-codes  # jadx无损启动
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;Xamarin逆向&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;import sys, struct, lz4.block, os.path
+
+def main():
+	if len(sys.argv) != 2:
+		sys.exit(&quot;[i] Usage: &quot; + sys.argv[0]  + &quot; in_file.dll&quot;)
+
+	in_file = sys.argv[1]
+
+	with open(in_file, &quot;rb&quot;) as compressed_file:
+		compressed_data = compressed_file.read()
+
+	header = compressed_data[:4]
+
+	if header != b&apos;XALZ&apos;:
+		sys.exit(&quot;[!] Wrong header, aborting...!&quot;)
+
+	packed_payload_len = compressed_data[8:12]
+	unpacked_payload_len = struct.unpack(&apos;&amp;lt;I&apos;, packed_payload_len)[0]
+	compressed_payload = compressed_data[12:]
+	decompressed_payload = lz4.block.decompress(compressed_payload, uncompressed_size=unpacked_payload_len)
+
+	out_file = in_file.rsplit(&quot;.&quot;,1)[0] + &quot;_out.dll&quot;
+
+	if os.path.isfile(out_file):
+		sys.exit(&quot;[!] Output file [&quot; + out_file  + &quot;] already exists, aborting...!&quot;)
+
+	with open(out_file, &quot;wb&quot;) as decompressed_file:
+		decompressed_file.write(decompressed_payload)
+		print( &quot;[i] Success!&quot;)
+		print( &quot;[i] File [&quot; + out_file + &quot;] was created as result!&quot;)
+
+if __name__ == &quot;__main__&quot;:
+	main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;3. Frida&lt;/h1&gt;
+&lt;h2&gt;3.1. 堆栈打印&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;Java.perform(function(){
+    var SQLiteDatabase = Java.use(&quot;com.tencent.wcdb.database.SQLiteDatabase&quot;);
+    SQLiteDatabase[&quot;open&quot;].implementation = function (bArr, sQLiteCipherSpec, i15) {
+        console.log(Java.use(&quot;android.util.Log&quot;).getStackTraceString(Java.use(&quot;java.lang.Throwable&quot;).$new()));  //java层打印堆栈
+        console.log(&apos;open is called&apos; + &apos;, &apos; + &apos;bArr: &apos; + JSON.stringify(bArr) + &apos;, &apos; + &apos;sQLiteCipherSpec: &apos; + sQLiteCipherSpec + &apos;, &apos; + &apos;i15: &apos; + i15);
+        var ret = this.open(bArr, sQLiteCipherSpec, i15);
+        console.log(&apos;open ret value is &apos; + ret);
+        return ret;
+    };
+});
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;3.2 函数hook&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Java.perform(function(){
+    var e = Java.use(&quot;ir3.e&quot;);
+    e[&quot;r&quot;].implementation = function (str, str2, i15, z15) {
+        console.log(&apos;r is called&apos; + &apos;, &apos; + &apos;str: &apos; + str + &apos;, &apos; + &apos;str2: &apos; + str2 + &apos;, &apos; + &apos;i15: &apos; + i15 + &apos;, &apos; + &apos;z15: &apos; + z15);
+        var ret = this.r(str, str2, i15, z15);
+        console.log(&apos;r ret value is &apos; + ret);
+        return ret;
+    };
+});
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;4. Windows&lt;/h1&gt;
+&lt;h2&gt;4.1. hyper-v&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All # 开启hyper-v
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;5. 证书&lt;/h1&gt;
+&lt;h2&gt;5.1. openssl&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;ssh-keygen -y -f ~/.ssh/id_rsa # ssh-keygen导出公钥
+openssl x509 -in a.cer -inform der -out a.pem -outform pem # der to pem
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;6. Docker&lt;/h1&gt;
+&lt;h2&gt;6.1. Docker Desktop version on Mac&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# https://stackoverflow.com/questions/64221861/an-error-failed-to-solve-with-frontend-dockerfile-v0
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
+
+# snap docker 国内源
+# /var/snap/docker/current/config/daemon.json
+# {
+#     &quot;log-level&quot;:        &quot;error&quot;,
+#     &quot;registry-mirrors&quot;: [
+#         &quot;https://docker.mirrors.ustc.edu.cn&quot;
+#     ]
+# }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;7. Linux&lt;/h1&gt;
+&lt;h2&gt;7.1. 扩容&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# lvextend -L 10G /dev/mapper/ubuntu--vg-ubuntu--lv         //增大或减小至19G
+# lvextend -L +10G /dev/mapper/ubuntu--vg-ubuntu--lv        //增加10G
+# lvreduce -L -10G /dev/mapper/ubuntu--vg-ubuntu--lv        //减小10G
+# lvresize -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv   //按百分比扩
+sudo lvresize -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv
+# 执行resize2fs使扩容生效
+sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;7.2. 自动挂载&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;crontab -e
+# @reboot mount /dev/sdb /home/docker/data
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;7.3. 命令行操作&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;for i in *; do mv $i ${i}.zip; done # 批量加后缀
+for i in *; do mv $i ${i%.*}.zip; done # 批量改后缀
+SCRIPT_DIR=$( dirname $(readlink -f $0) ) # 当前目录
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;8. Mysql&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;# 创建账号及修改账号权限
+CREATE DATABASE bizsec CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER &apos;bizsec&apos;@&apos;%&apos; IDENTIFIED BY &apos;password&apos;;
+GRANT ALL PRIVILEGES ON bizsec.* TO &apos;bizsec&apos;@&apos;%&apos;;
+FLUSH PRIVILEGES;
+SELECT User, Password, Host FROM mysql.user;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;9. NodeJS&lt;/h1&gt;
+&lt;pre&gt;&lt;code&gt;npm config set registry http://mirrors.cloud.tencent.com/npm/ # 配置
+npm config get registry # 验证
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;9.1. elecetron反编译&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# https://stackoverflow.com/questions/38523617/how-to-unpack-an-asar-file
+npm install -g @electron/asar
+npx @electron/asar extract app.asar app # Extract the whole archive:
+npx @electron/asar extract-file app.asar main.js #Extract a particular file:
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;10. 参考文献&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://ma.ttias.be/socks-proxy-linux-ssh-bypass-content-filters/#set-up-socks5-ssh-tunnel&quot;&gt;Create a SOCKS proxy on a Linux server with SSH to bypass content filters&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item></channel></rss>
