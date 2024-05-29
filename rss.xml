@@ -1,4 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>CVE-2024-2887 Chrome Type Confusion漏洞分析</title><link>https://picoorg.github.io/posts/cve-2024-2887/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2024-2887/</guid><description>本文主要翻译了ZDI博客内容，水平有限以理解为主，后续计划增补PoC和补丁分析。</description><pubDate>Wed, 08 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>Android漏洞分析</title><link>https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><pubDate>Wed, 15 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Android简介&lt;/h1&gt;
+&lt;h1&gt;Android Binder&lt;/h1&gt;
+&lt;h1&gt;Bundle mismatch&lt;/h1&gt;
+&lt;h1&gt;LaunchAnyWhere&lt;/h1&gt;
+&lt;h1&gt;Android WebView jsbridge&lt;/h1&gt;
+&lt;h1&gt;参考文献&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://tech.meituan.com/2017/09/14/android-binde-kcon.html&quot;&gt;Android Binder漏洞挖掘技术与案例分享&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://colbert337.github.io/2015/08/24/android-attack-surface/&quot;&gt;Android Attack Surface&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>CVE-2024-2887 Chrome Type Confusion漏洞分析</title><link>https://picoorg.github.io/posts/cve-2024-2887/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2024-2887/</guid><description>本文主要翻译了ZDI博客内容，水平有限以理解为主，后续计划增补PoC和补丁分析。</description><pubDate>Wed, 08 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E7%AE%80%E4%BB%8B&quot;&gt;1. 简介&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#2-%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0&quot;&gt;2. 漏洞成因&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#3-%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8&quot;&gt;3. 漏洞利用&lt;/a&gt;
@@ -225,6 +235,268 @@ case kExprRefCastNull: {
 &lt;li&gt;&lt;a href=&quot;https://docs.google.com/document/d/1FM4fQmIhEqPG8uGp5o9A-mnPB5BOeScZYpkHjo0KKA8/edit#heading=h.xzptrog8pyxf&quot;&gt;V8 Sandbox - High-Level Design Doc&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://webassembly.github.io/gc/core/_download/WebAssembly.pdf&quot;&gt;WebAssembly Specification: Release 2.0 + tail calls + function references + gc (Draft 2024-04-28)&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/17823225/do-arraybuffers-have-a-maximum-length&quot;&gt;javascript - Do ArrayBuffers have a maximum length? - Stack Overflow&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>LaunchAnyWhere漏洞分析</title><link>https://picoorg.github.io/posts/launchanywhere/</link><guid isPermaLink="true">https://picoorg.github.io/posts/launchanywhere/</guid><description>本文主要针对LaunchAnyWhere类型漏洞进行整理分析，最终形成一些静态分析规则形式的总结。</description><pubDate>Tue, 28 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;概述&lt;/h1&gt;
+&lt;p&gt;&lt;code&gt;LaunchAnyWhere&lt;/code&gt;漏洞比较早的分析可以参考&lt;a href=&quot;http://retme.net/index.php/2014/08/20/launchAnyWhere.html&quot;&gt;retme的文章&lt;/a&gt;，后来Google给这种漏洞命名为&lt;a href=&quot;https://support.google.com/faqs/answer/9267555&quot;&gt;Intent Redirection&lt;/a&gt;。&lt;code&gt;LaunchAnyWhere&lt;/code&gt;顾名思义就是能够调用任意未导出的&lt;code&gt;Activity&lt;/code&gt;。&lt;/p&gt;
+&lt;h1&gt;漏洞成因&lt;/h1&gt;
+&lt;h2&gt;&lt;a href=&quot;https://android.googlesource.com/platform/frameworks/base/+/5bab9da%5E%21/&quot;&gt;Google Bug 7699048&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AccountManagerService&lt;/code&gt;是系统服务之一，暴露给开发者的的接口是&lt;code&gt;AccountManager&lt;/code&gt;。该服务用于管理用户各种网络账号。这使得一些应用可以获取用户网络账号的&lt;code&gt;token&lt;/code&gt;，并且使用&lt;code&gt;token&lt;/code&gt;调用一些网络服务。这种设计的本意是，&lt;code&gt;AccountManagerService&lt;/code&gt;帮助&lt;code&gt;AppA&lt;/code&gt;查找到&lt;code&gt;AppB&lt;/code&gt;账号登陆页面，并呼起这个登陆页面。而问题在于，&lt;code&gt;AppB&lt;/code&gt;可以任意指定这个&lt;code&gt;intent&lt;/code&gt;所指向的组件，&lt;code&gt;AppA&lt;/code&gt;将在不知情的情况下由&lt;code&gt;AccountManagerResponse&lt;/code&gt;调用起了一个&lt;code&gt;Activity&lt;/code&gt;。如果&lt;code&gt;AppA&lt;/code&gt;是一个system权限应用，比如Settings，那么&lt;code&gt;AppA&lt;/code&gt;能够调用起任意&lt;code&gt;AppB&lt;/code&gt;指定的未导出&lt;code&gt;Activity&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;./20140820063530_23346.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;此漏洞比较经典的流程图，当&lt;code&gt;AppA&lt;/code&gt;是&lt;code&gt;Settings&lt;/code&gt;，可以简单理解成以下流程：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;AppB&lt;/code&gt;调用&lt;code&gt;com.android.settings.accounts.AddAccountSettings&lt;/code&gt;，使Settings请求添加一个特定类型的网络账号&lt;/li&gt;
+&lt;li&gt;系统查询到&lt;code&gt;AppB&lt;/code&gt;可以提供一个该类型的网络账号服务，系统向&lt;code&gt;AppB&lt;/code&gt;发起请求&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;AppB&lt;/code&gt;返回了一个&lt;code&gt;intent&lt;/code&gt;给系统，系统把&lt;code&gt;intent&lt;/code&gt;转发给&lt;code&gt;Settings&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;AccountManagerResponse&lt;/code&gt;在Settings的进程空间内调用&lt;code&gt;startActivity(intent)&lt;/code&gt;调起一个&lt;code&gt;Activity&lt;/code&gt;，&lt;code&gt;AccountManagerResponse&lt;/code&gt;是&lt;code&gt;FrameWork&lt;/code&gt;中的代码，&lt;code&gt;AppA&lt;/code&gt;对这一调用毫不知情。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;最终关键触发点在此处&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/** Handles the responses from the AccountManager */
+private class Response extends IAccountManagerResponse.Stub {
+    public void onResult(Bundle bundle) {
+        Intent intent = bundle.getParcelable(KEY_INTENT);
+        if (intent != null &amp;amp;&amp;amp; mActivity != null) {
+          // since the user provided an Activity we will silently start intents
+          // that we see
+          mActivity.startActivity(intent);
+            // leave the Future running to wait for the real response to this request
+            } else if (bundle.getBoolean(&quot;retry&quot;)) {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;a href=&quot;https://android.googlesource.com/platform/frameworks/base/+/5bab9da%5E%21/#F0&quot;&gt;安卓4.4&lt;/a&gt;已经修复了这个漏洞，检查了Step3中返回的&lt;code&gt;intent&lt;/code&gt;所指向的&lt;code&gt;Activity&lt;/code&gt;和&lt;code&gt;AppB&lt;/code&gt;是否是有相同签名的。避免了&lt;code&gt;LaunchAnyWhere&lt;/code&gt;的可能。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;+        @Override
+         public void onResult(Bundle result) {
+             mNumResults++;
+-            if (result != null &amp;amp;&amp;amp; !TextUtils.isEmpty(result.getString(AccountManager.KEY_AUTHTOKEN))) {
++            Intent intent = null;
++            if (result != null
++                    &amp;amp;&amp;amp; (intent = result.getParcelable(AccountManager.KEY_INTENT)) != null) {
++                /*
++                 * The Authenticator API allows third party authenticators to
++                 * supply arbitrary intents to other apps that they can run,
++                 * this can be very bad when those apps are in the system like
++                 * the System Settings.
++                 */
++                PackageManager pm = mContext.getPackageManager();
++                ResolveInfo resolveInfo = pm.resolveActivity(intent, 0);
++                int targetUid = resolveInfo.activityInfo.applicationInfo.uid;
++                int authenticatorUid = Binder.getCallingUid();
++                if (PackageManager.SIGNATURE_MATCH !=
++                        pm.checkSignatures(authenticatorUid, targetUid)) {
++                    throw new SecurityException(
++                            &quot;Activity to be started with KEY_INTENT must &quot; +
++                            &quot;share Authenticator&apos;s signatures&quot;);
++                }
++            }
++            if (result != null
++                    &amp;amp;&amp;amp; !TextUtils.isEmpty(result.getString(AccountManager.KEY_AUTHTOKEN))) {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;Google Bug 17356824&lt;/h2&gt;
+&lt;p&gt;和&lt;a href=&quot;#google-bug-7699048&quot;&gt;Google Bug 7699048&lt;/a&gt;是同一个流程，但不同的是漏洞成因不同，这次是&lt;code&gt;Settings&lt;/code&gt;调用了&lt;code&gt;AccountManager.addAccount&lt;/code&gt;。在传递的&lt;code&gt;AddAccountOptions&lt;/code&gt;参数时加入了一个&lt;code&gt;PendingIntent&lt;/code&gt;，其&lt;code&gt;intent&lt;/code&gt;类型是&lt;code&gt;Broadcast&lt;/code&gt;。注意这个&lt;code&gt;PendingIntent&lt;/code&gt;是&lt;code&gt;Settings&lt;/code&gt;创建的，拥有system权限。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;     private void addAccount(String accountType) {
+         Bundle addAccountOptions = new Bundle();
+         mPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(), 0);
+         addAccountOptions.putParcelable(KEY_CALLER_IDENTITY, mPendingIntent);
+         addAccountOptions.putBoolean(EXTRA_HAS_MULTIPLE_USERS, Utils.hasMultipleUsers(this));
+         AccountManager.get(this).addAccount(
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;因为&lt;code&gt;Settings&lt;/code&gt;初始化&lt;code&gt;PendingIntent&lt;/code&gt;的时候传入的是一个没有内容的&lt;code&gt;new Intent()&lt;/code&gt;，所以攻击者在调用&lt;code&gt;PendingIntent.send()&lt;/code&gt;的时候可以随意设置&lt;code&gt;Intent&lt;/code&gt;中的大部分内容。这是由于在系统源码中&lt;code&gt;PendingIntentRecord.sendInner&lt;/code&gt;调用了&lt;code&gt;finalIntent.fillIn(intent, key.flags)&lt;/code&gt;，允许调用者填充&lt;code&gt;Intent&lt;/code&gt;的值。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;    int sendInner(int code, Intent intent, String resolvedType,
+            IIntentReceiver finishedReceiver, String requiredPermission,
+            IBinder resultTo, String resultWho, int requestCode,
+            int flagsMask, int flagsValues, Bundle options) {
+        synchronized(owner) {
+            if (!canceled) {
+                sent = true;
+                if ((key.flags&amp;amp;PendingIntent.FLAG_ONE_SHOT) != 0) {
+                    owner.cancelIntentSenderLocked(this, true);
+                    canceled = true;
+                }
+                Intent finalIntent = key.requestIntent != null
+                        ? new Intent(key.requestIntent) : new Intent();
+                if (intent != null) {
+                    int changes = finalIntent.fillIn(intent, key.flags);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;因此只要AppB在step3的时候取到了AddAccountOptions参数，从中获得了这个PendingIntent，并且可以利用它以system的身份发送广播，示例代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;PendingIntent pending_intent = (PendingIntent)options.get(&quot;pendingIntent&quot;);
+intent.setAction(&quot;android.intent.action.BOOT_COMPLETED&quot;);
+ 
+try {
+         pending_intent.send(getGlobalApplicationContext(),0,intent,null,null,null);
+} catch (CanceledException e) {
+         e.printStackTrace();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在此&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/37b58a4%5E%21/#F0&quot;&gt;补丁&lt;/a&gt;中填充了无意义的值，防止攻击者重新填充Intent&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;     private void addAccount(String accountType) {
+         Bundle addAccountOptions = new Bundle();
+-        mPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(), 0);
++        /*
++         * The identityIntent is for the purposes of establishing the identity
++         * of the caller and isn&apos;t intended for launching activities, services
++         * or broadcasts.
++         *
++         * Unfortunately for legacy reasons we still need to support this. But
++         * we can cripple the intent so that 3rd party authenticators can&apos;t
++         * fill in addressing information and launch arbitrary actions.
++         */
++        Intent identityIntent = new Intent();
++        identityIntent.setComponent(new ComponentName(SHOULD_NOT_RESOLVE, SHOULD_NOT_RESOLVE));
++        identityIntent.setAction(SHOULD_NOT_RESOLVE);
++        identityIntent.addCategory(SHOULD_NOT_RESOLVE);
++
++        mPendingIntent = PendingIntent.getBroadcast(this, 0, identityIntent, 0);
+         addAccountOptions.putParcelable(KEY_CALLER_IDENTITY, mPendingIntent);
+         addAccountOptions.putBoolean(EXTRA_HAS_MULTIPLE_USERS, Utils.hasMultipleUsers(this));
+         AccountManager.get(this).addAccount(
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2020-06-01&quot;&gt;CVE-2020-0144&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;SliceProvider&lt;/code&gt;是自&lt;code&gt;Android P&lt;/code&gt;开始引入的一种应用程序间共享UI界面的机制，可以通过&lt;code&gt;SettingsSliceProvider&lt;/code&gt;中的&lt;code&gt;ContentProvider&lt;/code&gt;来共享给别的应用使用，用户不必打开&lt;code&gt;Settings&lt;/code&gt;，就可以在其他应用界面中对某些设置进行操作。&lt;/p&gt;
+&lt;p&gt;关键漏洞位置在&lt;code&gt;frameworks/base/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardSliceProvider.java&lt;/code&gt;生成了一个无&lt;code&gt;Package&lt;/code&gt;和&lt;code&gt;Action&lt;/code&gt;的&lt;code&gt;PendingIntent&lt;/code&gt;，具体代码如下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public boolean onCreateSliceProvider() {
+            ...
+            mPendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(), 0);
+            ...
+        }
+return true;
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;接下来通过父类&lt;code&gt;SliceProvider&lt;/code&gt;的&lt;code&gt;call&lt;/code&gt;方法返回包含该&lt;code&gt;Intent&lt;/code&gt;的&lt;code&gt;Bundle&lt;/code&gt;，具体代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;@Override
+    public Bundle call(String method, String arg, Bundle extras) {
+        if (method.equals(METHOD_SLICE)) {
+            Uri uri = getUriWithoutUserId(validateIncomingUriOrNull(
+                    extras.getParcelable(EXTRA_BIND_URI)));
+            List&amp;lt;SliceSpec&amp;gt; supportedSpecs = extras.getParcelableArrayList(EXTRA_SUPPORTED_SPECS);
+
+            String callingPackage = getCallingPackage();
+            int callingUid = Binder.getCallingUid();
+            int callingPid = Binder.getCallingPid();
+
+            Slice s = handleBindSlice(uri, supportedSpecs, callingPackage, callingUid, callingPid);
+            Bundle b = new Bundle();
+            b.putParcelable(EXTRA_SLICE, s);
+            return b;
+        } else if (method.equals(METHOD_MAP_INTENT)) {
+            ...
+        } else if (method.equals(METHOD_MAP_ONLY_INTENT)) {
+            ...
+        } else if (method.equals(METHOD_PIN)) {
+            ...
+        } else if (method.equals(METHOD_UNPIN)) {
+            ...
+        } else if (method.equals(METHOD_GET_DESCENDANTS)) {
+            ...
+        } else if (method.equals(METHOD_GET_PERMISSIONS)) {
+            ...
+        }
+        return super.call(method, arg, extras);
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;难点在于如何拿到这个&lt;code&gt;PendingIntent&lt;/code&gt;，具体思路可以参考文章&lt;a href=&quot;https://paper.seebug.org/1269/#0x04-keyguardsliceprovider&quot;&gt;Android 中的特殊攻击面（三）—— 隐蔽的 call 函数&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;该漏洞&lt;a href=&quot;https://android.googlesource.com/platform/frameworks/base/+/d16e86f466c2fc18448b654cbe71089c7fede991%5E%21/#F0&quot;&gt;补丁&lt;/a&gt;相当于指定了Package，细节如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;             mZenModeController = new ZenModeControllerImpl(getContext(), mHandler);
+             mZenModeController.addCallback(this);
+             mDatePattern = getContext().getString(R.string.system_ui_aod_date_pattern);
+-            mPendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(), 0);
++            mPendingIntent = PendingIntent.getActivity(getContext(), 0,
++                    new Intent(getContext(), KeyguardSliceProvider.class), 0);
+             mMediaWakeLock = new SettableWakeLock(WakeLock.createPartial(getContext(), &quot;media&quot;),
+                     &quot;media&quot;);
+             KeyguardSliceProvider.sInstance = this;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;同样也有公开&lt;a href=&quot;https://github.com/tea9/CVE-2020-0114-systemui&quot;&gt;POC&lt;/a&gt;可以参考。&lt;/p&gt;
+&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-03-01&quot;&gt;CVE-2021-39707&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;最终漏洞触发位置在&lt;code&gt;com/android/settings/users/AppRestrictionsFragment.java&lt;/code&gt;，&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/refs/tags/android-12.0.0_r30/src/com/android/settings/users/AppRestrictionsFragment.java#630&quot;&gt;相关代码&lt;/a&gt;为：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public void onReceive(Context context, Intent intent) {
+    Bundle results = getResultExtras(true);
+    final ArrayList&amp;lt;RestrictionEntry&amp;gt; restrictions = results.getParcelableArrayList(
+            Intent.EXTRA_RESTRICTIONS_LIST);
+    Intent restrictionsIntent = results.getParcelable(CUSTOM_RESTRICTIONS_INTENT);
+    if (restrictions != null &amp;amp;&amp;amp; restrictionsIntent == null) {
+        onRestrictionsReceived(preference, restrictions);
+        if (mRestrictedProfile) {
+            mUserManager.setApplicationRestrictions(packageName,
+                    RestrictionsManager.convertRestrictionsToBundle(restrictions), mUser);
+        }
+    } else if (restrictionsIntent != null) {
+        preference.setRestrictions(restrictions);
+        if (invokeIfCustom &amp;amp;&amp;amp; AppRestrictionsFragment.this.isResumed()) {
+            assertSafeToStartCustomActivity(restrictionsIntent);
+            int requestCode = generateCustomActivityRequestCode(
+                    RestrictionsResultReceiver.this.preference);
+            AppRestrictionsFragment.this.startActivityForResult(
+                    restrictionsIntent, requestCode);
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;此漏洞是&lt;code&gt;assertSafeToStartCustomActivity&lt;/code&gt;校验不足产生的，相关代码：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;private void assertSafeToStartCustomActivity(Intent intent) {
+    // Activity can be started if it belongs to the same app
+    if (intent.getPackage() != null &amp;amp;&amp;amp; intent.getPackage().equals(packageName)) {
+        return;
+    }
+    // Activity can be started if intent resolves to multiple activities
+    List&amp;lt;ResolveInfo&amp;gt; resolveInfos = AppRestrictionsFragment.this.mPackageManager
+            .queryIntentActivities(intent, 0 /* no flags */);
+    if (resolveInfos.size() != 1) {
+        return;
+    }
+    // Prevent potential privilege escalation
+    ActivityInfo activityInfo = resolveInfos.get(0).activityInfo;
+    if (!packageName.equals(activityInfo.packageName)) {
+        throw new SecurityException(&quot;Application &quot; + packageName
+                + &quot; is not allowed to start activity &quot; + intent);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;其中，正常情况下&lt;code&gt;resolveInfos.size() != 1&lt;/code&gt;可筛选出&lt;code&gt;Intent&lt;/code&gt;为多个目标的情况，触发用户选择的流程从而防止漏洞触发。但是&lt;code&gt;Activity&lt;/code&gt;在&lt;code&gt;Manifest&lt;/code&gt;中有一个配置叫做&lt;code&gt;android:priority&lt;/code&gt;，如果其中存在高优先级的Activity则会被直接选择，并不会触发用户选择的流程。但刚好&lt;code&gt;PrivilegedCallActivity&lt;/code&gt;符合利用场景，相关漏洞利用参考&lt;a href=&quot;https://www.freebuf.com/articles/mobile/348694.html&quot;&gt;CVE的别样发现之旅 | AOSP Bug Hunting with appshark&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;最终官方给出的&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/4fb753d22e6a2505b1667950d153bc03ad8ae422%5E%21/&quot;&gt;补丁&lt;/a&gt;代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;             if (intent.getPackage() != null &amp;amp;&amp;amp; intent.getPackage().equals(packageName)) {
+                 return;
+             }
+-            // Activity can be started if intent resolves to multiple activities
+-            List&amp;lt;ResolveInfo&amp;gt; resolveInfos = AppRestrictionsFragment.this.mPackageManager
+-                    .queryIntentActivities(intent, 0 /* no flags */);
+-            if (resolveInfos.size() != 1) {
+-                return;
++            ResolveInfo resolveInfo = mPackageManager.resolveActivity(
++                    intent, PackageManager.MATCH_DEFAULT_ONLY);
++
++            if (resolveInfo == null) {
++                throw new ActivityNotFoundException(&quot;No result for resolving &quot; + intent);
+             }
+             // Prevent potential privilege escalation
+-            ActivityInfo activityInfo = resolveInfos.get(0).activityInfo;
++            ActivityInfo activityInfo = resolveInfo.activityInfo;
+             if (!packageName.equals(activityInfo.packageName)) {
+                 throw new SecurityException(&quot;Application &quot; + packageName
+                         + &quot; is not allowed to start activity &quot; + intent);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-07-01&quot;&gt;CVE-2022-20223&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;漏洞利用流程和&lt;a href=&quot;#cve-2021-39707&quot;&gt;CVE-2021-39707&lt;/a&gt;类似，只不过是校验函数的二次绕过。&lt;/p&gt;
+&lt;p&gt;由于&lt;code&gt;intent.getPackage()&lt;/code&gt;和&lt;code&gt;getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName&lt;/code&gt;获得packageName逻辑不一致，导致校验不足。其中&lt;code&gt;intent.getPackage()&lt;/code&gt;是针对&lt;code&gt;private String mPackage;&lt;/code&gt;，而&lt;code&gt;resolve&lt;/code&gt;方式是如果存在&lt;code&gt;private ComponentName mComponent;&lt;/code&gt;则取该值，否则取&lt;code&gt;mPackage&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;对应的&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/abadb382114fa8af5209295c9bae2ca2b08935f3%5E%21/#F0&quot;&gt;修复补丁&lt;/a&gt;也比较简单，代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;         private void assertSafeToStartCustomActivity(Intent intent) {
+-            // Activity can be started if it belongs to the same app
+-            if (intent.getPackage() != null &amp;amp;&amp;amp; intent.getPackage().equals(packageName)) {
+-                return;
+-            }
++            EventLog.writeEvent(0x534e4554, &quot;223578534&quot;, -1 /* UID */, &quot;&quot;);
+             ResolveInfo resolveInfo = mPackageManager.resolveActivity(
+                     intent, PackageManager.MATCH_DEFAULT_ONLY);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;漏洞利用&lt;/h1&gt;
+&lt;h2&gt;launch a component&lt;/h2&gt;
+&lt;p&gt;调用&lt;code&gt;startActivity&lt;/code&gt;, &lt;code&gt;startActivityForResult&lt;/code&gt;, &lt;code&gt;startService&lt;/code&gt;, &lt;code&gt;sendBroadcast&lt;/code&gt;时使用不可信的&lt;code&gt;intent&lt;/code&gt;，可能导致唤起私有的&lt;code&gt;Activity&lt;/code&gt;&lt;/p&gt;
+&lt;h2&gt;return data&lt;/h2&gt;
+&lt;p&gt;调用&lt;code&gt;setResult&lt;/code&gt;时使用不可信的&lt;code&gt;intent&lt;/code&gt;，可能导致&lt;code&gt;app&lt;/code&gt;隐私数据泄露&lt;/p&gt;
+&lt;h1&gt;参考文章&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;http://retme.net/index.php/2014/08/20/launchAnyWhere.html&quot;&gt;launchAnyWhere: Activity组件权限绕过漏洞解析(Google Bug 7699048 )&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.freebuf.com/articles/mobile/348694.html&quot;&gt;CVE的别样发现之旅 | AOSP Bug Hunting with appshark (1): I... - FreeBuf网络安全行业门户&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://blog.lleavesg.top/article/LaunchAnyWhere&quot;&gt;LaunchAnyWhere漏洞分析&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://paper.seebug.org/1269/&quot;&gt;Android 中的特殊攻击面（三）—— 隐蔽的 call 函数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;http://retme.net/index.php/2014/11/14/broadAnywhere-bug-17356824.html&quot;&gt;broadAnywhere：Broadcast组件权限绕过漏洞（Bug: 17356824）&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </content:encoded></item><item><title>OAuth2攻击面分析</title><link>https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/oauth2%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><description>本文主要梳理OAuth2常见攻击手段，并且结合实际案例进行分析。</description><pubDate>Tue, 07 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E5%89%8D%E8%A8%80&quot;&gt;1. 前言&lt;/a&gt;
@@ -500,7 +772,7 @@ case kExprRefCastNull: {
 &lt;li&gt;&lt;a href=&quot;https://www.ruanyifeng.com/blog/2019/04/oauth_design.html&quot;&gt;OAuth 2.0 的一个简单解释&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://openid.net/connect/&quot;&gt;OpenID Connect&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-</content:encoded></item><item><title>cheetsheet/index</title><link>https://picoorg.github.io/posts/cheetsheet/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cheetsheet/</guid><description>CheetSheet，快速检索常见Tips。</description><pubDate>Sat, 11 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+</content:encoded></item><item><title>cheetsheet</title><link>https://picoorg.github.io/posts/cheetsheet/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cheetsheet/</guid><description>CheetSheet，快速检索常见Tips。</description><pubDate>Sat, 11 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E4%BB%A3%E7%90%86&quot;&gt;1. 代理&lt;/a&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#11-ssh&quot;&gt;1.1. ssh&lt;/a&gt;&lt;/li&gt;
