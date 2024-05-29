@@ -236,10 +236,29 @@ case kExprRefCastNull: {
 &lt;li&gt;&lt;a href=&quot;https://webassembly.github.io/gc/core/_download/WebAssembly.pdf&quot;&gt;WebAssembly Specification: Release 2.0 + tail calls + function references + gc (Draft 2024-04-28)&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/questions/17823225/do-arraybuffers-have-a-maximum-length&quot;&gt;javascript - Do ArrayBuffers have a maximum length? - Stack Overflow&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-</content:encoded></item><item><title>LaunchAnyWhere漏洞分析</title><link>https://picoorg.github.io/posts/launchanywhere/</link><guid isPermaLink="true">https://picoorg.github.io/posts/launchanywhere/</guid><description>本文主要针对LaunchAnyWhere类型漏洞进行整理分析，最终形成一些静态分析规则形式的总结。</description><pubDate>Tue, 28 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;概述&lt;/h1&gt;
+</content:encoded></item><item><title>LaunchAnyWhere漏洞分析</title><link>https://picoorg.github.io/posts/launchanywhere/</link><guid isPermaLink="true">https://picoorg.github.io/posts/launchanywhere/</guid><description>本文主要针对LaunchAnyWhere类型漏洞进行整理分析，最终形成一些静态分析规则形式的总结。</description><pubDate>Tue, 28 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#1-%E6%A6%82%E8%BF%B0&quot;&gt;1. 概述&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#2-%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0&quot;&gt;2. 漏洞成因&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#21-google-bug-7699048&quot;&gt;2.1. Google Bug 7699048&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#22-google-bug-17356824&quot;&gt;2.2. Google Bug 17356824&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#23-cve-2020-0144&quot;&gt;2.3. CVE-2020-0144&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#24-cve-2021-39707&quot;&gt;2.4. CVE-2021-39707&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#25-cve-2022-20223&quot;&gt;2.5. CVE-2022-20223&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#3-%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8&quot;&gt;3. 漏洞利用&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#31-launch-a-component&quot;&gt;3.1. launch a component&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#32-return-data&quot;&gt;3.2. return data&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#4-%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0&quot;&gt;4. 参考文章&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;1. 概述&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;LaunchAnyWhere&lt;/code&gt;漏洞比较早的分析可以参考&lt;a href=&quot;http://retme.net/index.php/2014/08/20/launchAnyWhere.html&quot;&gt;retme的文章&lt;/a&gt;，后来Google给这种漏洞命名为&lt;a href=&quot;https://support.google.com/faqs/answer/9267555&quot;&gt;Intent Redirection&lt;/a&gt;。&lt;code&gt;LaunchAnyWhere&lt;/code&gt;顾名思义就是能够调用任意未导出的&lt;code&gt;Activity&lt;/code&gt;。&lt;/p&gt;
-&lt;h1&gt;漏洞成因&lt;/h1&gt;
-&lt;h2&gt;&lt;a href=&quot;https://android.googlesource.com/platform/frameworks/base/+/5bab9da%5E%21/&quot;&gt;Google Bug 7699048&lt;/a&gt;&lt;/h2&gt;
+&lt;h1&gt;2. 漏洞成因&lt;/h1&gt;
+&lt;h2&gt;2.1. &lt;a href=&quot;https://android.googlesource.com/platform/frameworks/base/+/5bab9da%5E%21/&quot;&gt;Google Bug 7699048&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;&lt;code&gt;AccountManagerService&lt;/code&gt;是系统服务之一，暴露给开发者的的接口是&lt;code&gt;AccountManager&lt;/code&gt;。该服务用于管理用户各种网络账号。这使得一些应用可以获取用户网络账号的&lt;code&gt;token&lt;/code&gt;，并且使用&lt;code&gt;token&lt;/code&gt;调用一些网络服务。这种设计的本意是，&lt;code&gt;AccountManagerService&lt;/code&gt;帮助&lt;code&gt;AppA&lt;/code&gt;查找到&lt;code&gt;AppB&lt;/code&gt;账号登陆页面，并呼起这个登陆页面。而问题在于，&lt;code&gt;AppB&lt;/code&gt;可以任意指定这个&lt;code&gt;intent&lt;/code&gt;所指向的组件，&lt;code&gt;AppA&lt;/code&gt;将在不知情的情况下由&lt;code&gt;AccountManagerResponse&lt;/code&gt;调用起了一个&lt;code&gt;Activity&lt;/code&gt;。如果&lt;code&gt;AppA&lt;/code&gt;是一个system权限应用，比如Settings，那么&lt;code&gt;AppA&lt;/code&gt;能够调用起任意&lt;code&gt;AppB&lt;/code&gt;指定的未导出&lt;code&gt;Activity&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;./20140820063530_23346.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;此漏洞比较经典的流程图，当&lt;code&gt;AppA&lt;/code&gt;是&lt;code&gt;Settings&lt;/code&gt;，可以简单理解成以下流程：&lt;/p&gt;
@@ -289,7 +308,7 @@ private class Response extends IAccountManagerResponse.Stub {
 +            if (result != null
 +                    &amp;amp;&amp;amp; !TextUtils.isEmpty(result.getString(AccountManager.KEY_AUTHTOKEN))) {
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;Google Bug 17356824&lt;/h2&gt;
+&lt;h2&gt;2.2. Google Bug 17356824&lt;/h2&gt;
 &lt;p&gt;和&lt;a href=&quot;#google-bug-7699048&quot;&gt;Google Bug 7699048&lt;/a&gt;是同一个流程，但不同的是漏洞成因不同，这次是&lt;code&gt;Settings&lt;/code&gt;调用了&lt;code&gt;AccountManager.addAccount&lt;/code&gt;。在传递的&lt;code&gt;AddAccountOptions&lt;/code&gt;参数时加入了一个&lt;code&gt;PendingIntent&lt;/code&gt;，其&lt;code&gt;intent&lt;/code&gt;类型是&lt;code&gt;Broadcast&lt;/code&gt;。注意这个&lt;code&gt;PendingIntent&lt;/code&gt;是&lt;code&gt;Settings&lt;/code&gt;创建的，拥有system权限。&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;     private void addAccount(String accountType) {
          Bundle addAccountOptions = new Bundle();
@@ -348,7 +367,7 @@ try {
          addAccountOptions.putBoolean(EXTRA_HAS_MULTIPLE_USERS, Utils.hasMultipleUsers(this));
          AccountManager.get(this).addAccount(
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2020-06-01&quot;&gt;CVE-2020-0144&lt;/a&gt;&lt;/h2&gt;
+&lt;h2&gt;2.3. &lt;a href=&quot;https://source.android.com/docs/security/bulletin/2020-06-01&quot;&gt;CVE-2020-0144&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;&lt;code&gt;SliceProvider&lt;/code&gt;是自&lt;code&gt;Android P&lt;/code&gt;开始引入的一种应用程序间共享UI界面的机制，可以通过&lt;code&gt;SettingsSliceProvider&lt;/code&gt;中的&lt;code&gt;ContentProvider&lt;/code&gt;来共享给别的应用使用，用户不必打开&lt;code&gt;Settings&lt;/code&gt;，就可以在其他应用界面中对某些设置进行操作。&lt;/p&gt;
 &lt;p&gt;关键漏洞位置在&lt;code&gt;frameworks/base/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardSliceProvider.java&lt;/code&gt;生成了一个无&lt;code&gt;Package&lt;/code&gt;和&lt;code&gt;Action&lt;/code&gt;的&lt;code&gt;PendingIntent&lt;/code&gt;，具体代码如下&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;public boolean onCreateSliceProvider() {
@@ -404,7 +423,7 @@ return true;
              KeyguardSliceProvider.sInstance = this;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;同样也有公开&lt;a href=&quot;https://github.com/tea9/CVE-2020-0114-systemui&quot;&gt;POC&lt;/a&gt;可以参考。&lt;/p&gt;
-&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-03-01&quot;&gt;CVE-2021-39707&lt;/a&gt;&lt;/h2&gt;
+&lt;h2&gt;2.4. &lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-03-01&quot;&gt;CVE-2021-39707&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;最终漏洞触发位置在&lt;code&gt;com/android/settings/users/AppRestrictionsFragment.java&lt;/code&gt;，&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/refs/tags/android-12.0.0_r30/src/com/android/settings/users/AppRestrictionsFragment.java#630&quot;&gt;相关代码&lt;/a&gt;为：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;public void onReceive(Context context, Intent intent) {
     Bundle results = getResultExtras(true);
@@ -472,7 +491,7 @@ return true;
                  throw new SecurityException(&quot;Application &quot; + packageName
                          + &quot; is not allowed to start activity &quot; + intent);
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;&lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-07-01&quot;&gt;CVE-2022-20223&lt;/a&gt;&lt;/h2&gt;
+&lt;h2&gt;2.5. &lt;a href=&quot;https://source.android.com/docs/security/bulletin/2022-07-01&quot;&gt;CVE-2022-20223&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;漏洞利用流程和&lt;a href=&quot;#cve-2021-39707&quot;&gt;CVE-2021-39707&lt;/a&gt;类似，只不过是校验函数的二次绕过。&lt;/p&gt;
 &lt;p&gt;由于&lt;code&gt;intent.getPackage()&lt;/code&gt;和&lt;code&gt;getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY).activityInfo.packageName&lt;/code&gt;获得packageName逻辑不一致，导致校验不足。其中&lt;code&gt;intent.getPackage()&lt;/code&gt;是针对&lt;code&gt;private String mPackage;&lt;/code&gt;，而&lt;code&gt;resolve&lt;/code&gt;方式是如果存在&lt;code&gt;private ComponentName mComponent;&lt;/code&gt;则取该值，否则取&lt;code&gt;mPackage&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;对应的&lt;a href=&quot;https://android.googlesource.com/platform/packages/apps/Settings/+/abadb382114fa8af5209295c9bae2ca2b08935f3%5E%21/#F0&quot;&gt;修复补丁&lt;/a&gt;也比较简单，代码如下：&lt;/p&gt;
@@ -485,12 +504,12 @@ return true;
              ResolveInfo resolveInfo = mPackageManager.resolveActivity(
                      intent, PackageManager.MATCH_DEFAULT_ONLY);
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1&gt;漏洞利用&lt;/h1&gt;
-&lt;h2&gt;launch a component&lt;/h2&gt;
+&lt;h1&gt;3. 漏洞利用&lt;/h1&gt;
+&lt;h2&gt;3.1. launch a component&lt;/h2&gt;
 &lt;p&gt;调用&lt;code&gt;startActivity&lt;/code&gt;, &lt;code&gt;startActivityForResult&lt;/code&gt;, &lt;code&gt;startService&lt;/code&gt;, &lt;code&gt;sendBroadcast&lt;/code&gt;时使用不可信的&lt;code&gt;intent&lt;/code&gt;，可能导致唤起私有的&lt;code&gt;Activity&lt;/code&gt;&lt;/p&gt;
-&lt;h2&gt;return data&lt;/h2&gt;
+&lt;h2&gt;3.2. return data&lt;/h2&gt;
 &lt;p&gt;调用&lt;code&gt;setResult&lt;/code&gt;时使用不可信的&lt;code&gt;intent&lt;/code&gt;，可能导致&lt;code&gt;app&lt;/code&gt;隐私数据泄露&lt;/p&gt;
-&lt;h1&gt;参考文章&lt;/h1&gt;
+&lt;h1&gt;4. 参考文章&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;http://retme.net/index.php/2014/08/20/launchAnyWhere.html&quot;&gt;launchAnyWhere: Activity组件权限绕过漏洞解析(Google Bug 7699048 )&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.freebuf.com/articles/mobile/348694.html&quot;&gt;CVE的别样发现之旅 | AOSP Bug Hunting with appshark (1): I... - FreeBuf网络安全行业门户&lt;/a&gt;&lt;/li&gt;
