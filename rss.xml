@@ -8,6 +8,51 @@
 &lt;li&gt;&lt;a href=&quot;https://tech.meituan.com/2017/09/14/android-binde-kcon.html&quot;&gt;Android Binder漏洞挖掘技术与案例分享&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://colbert337.github.io/2015/08/24/android-attack-surface/&quot;&gt;Android Attack Surface&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</content:encoded></item><item><title>攻击Android Binder：CVE-2023-20938 的分析与利用</title><link>https://picoorg.github.io/posts/cve-2023-20938/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2023-20938/</guid><description>本文主要翻译了Google博客内容，水平有限以理解为主。</description><pubDate>Fri, 07 Jun 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;背景&lt;/h1&gt;
+&lt;p&gt;本文分析了如何利用&lt;code&gt;CVE-2023-20938&lt;/code&gt;漏洞进行&lt;code&gt;Android Binder&lt;/code&gt;攻击，该漏洞是&lt;code&gt;Binder&lt;/code&gt;设备驱动的&lt;code&gt;UAF&lt;/code&gt;漏洞，最终以非可信&lt;code&gt;APP&lt;/code&gt;在最新安卓设备上获取&lt;code&gt;root&lt;/code&gt;权限，&lt;code&gt;5.4-5.10&lt;/code&gt;版本的&lt;code&gt;GKI&lt;/code&gt;内核均受影响。&lt;/p&gt;
+&lt;h2&gt;Binder&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;Binder&lt;/code&gt;是&lt;code&gt;Android&lt;/code&gt;上主要的进程间通信机制，支持进程间传递文件描述符和包含指针的对象，由用户空间库&lt;code&gt;libbinder&lt;/code&gt;和&lt;code&gt;libhwbinder&lt;/code&gt;，以及&lt;code&gt;Android&lt;/code&gt;公共内核中的内核驱动程序组成，接口可由&lt;code&gt;AIDL&lt;/code&gt;定义。&lt;code&gt;Binder&lt;/code&gt;设备驱动在&lt;code&gt;/dev/binder&lt;/code&gt;，&lt;code&gt;Andoird&lt;/code&gt;所有非可信&lt;code&gt;APP&lt;/code&gt;都经过沙盒处理，进程间通信是通过&lt;code&gt;Binder&lt;/code&gt;实现的。尤其是&lt;code&gt;Chrome&lt;/code&gt;渲染进程被分配&lt;code&gt;SELinux&lt;/code&gt;更严格的&lt;code&gt;isolated_app&lt;/code&gt;上下文，但仍然可以通过&lt;code&gt;Binder&lt;/code&gt;实现进程间通信。所以，&lt;code&gt;Binder&lt;/code&gt;呈现出更广泛的攻击面。&lt;/p&gt;
+&lt;h2&gt;Binder历史漏洞&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;CVE-2019-2025&lt;/li&gt;
+&lt;li&gt;CVE-2019-2215&lt;/li&gt;
+&lt;li&gt;CVE-2020-0041&lt;/li&gt;
+&lt;li&gt;CVE-2020-0423&lt;/li&gt;
+&lt;li&gt;CVE-2022-20421&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;为了实现高性能&lt;code&gt;IPC&lt;/code&gt;，&lt;code&gt;Binder&lt;/code&gt;包含极其复杂的对象生命周期、内存管理和并发线程模型。为了了解这种复杂性，我们统计了三种不同类型的并发同步原语（5个锁、6个引用计数器和一些原子变量），它们都在实现驱动程序的同一个文件中使用。出于性能原因，&lt;code&gt;Binder&lt;/code&gt;中的锁定也非常细粒度，进一步增加了代码的复杂性。&lt;/p&gt;
+&lt;p&gt;近年来，利用几个&lt;code&gt;Binder&lt;/code&gt;的成功利用主要是由&lt;code&gt;UAF&lt;/code&gt;漏洞引起的。这些错误的根本原因多种多样，包括不当的清理逻辑（&lt;code&gt;CVE-2019-2215&lt;/code&gt;和&lt;code&gt;CVE-2022-20421&lt;/code&gt;）、数据竞争（&lt;code&gt;CVE-2020-0423&lt;/code&gt;）和对象越界访问（&lt;code&gt;CVE-2020-0041&lt;/code&gt;）。本博客提供了有关 UAF 问题的信息，该问题是由于处理 Binder 事务时清理实施不当而导致的引用计数错误。&lt;/p&gt;
+&lt;p&gt;漏洞分析：&lt;/p&gt;
+&lt;p&gt;漏洞是一个使用后释放（Use-After-Free, UAF）问题，由于在处理Binder事务时的不当清理实现导致引用计数错误。
+详细分析了用户空间程序如何与Binder交互，以及如何通过特定的ioctl调用来发送和接收事务。
+漏洞利用：&lt;/p&gt;
+&lt;p&gt;利用UAF漏洞减少特定binder_node的引用计数，导致该对象被释放，但留下悬挂指针。
+利用悬挂指针实现有限的泄漏原语（leak primitive），泄漏16字节的内核堆信息。
+利用泄漏的信息实现解链原语（unlink primitive），覆盖内核内存。
+结合泄漏和解链原语实现任意读取原语（arbitrary read primitive），用于识别要覆盖的内核结构的地址。
+提权演示：&lt;/p&gt;
+&lt;p&gt;演示了如何利用这些原语来获取root权限，包括禁用SELinux、绕过seccomp等。
+漏洞修复和结论：&lt;/p&gt;
+&lt;p&gt;漏洞在2023年2月和7月的Android安全公告中得到了修复。
+特别感谢了多位技术专家对本文的支持和审阅。
+附加信息：&lt;/p&gt;
+&lt;p&gt;提供了关于如何实现任意写原语（arbitrary write primitive）的额外信息。
+解释了binder_node的引用计数机制。&lt;/p&gt;
+&lt;h1&gt;参考文献&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://androidoffsec.withgoogle.com/posts/attacking-android-binder-analysis-and-exploitation-of-cve-2023-20938/&quot;&gt;Attacking Android Binder: Analysis and Exploitation of CVE-2023-20938&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=U-xSM159YLI&quot;&gt;OffensiveCon24 - Eugene Rodionov,Zi Fan Tan and Gulshan Singh&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://androidoffsec.withgoogle.com/posts/attacking-android-binder-analysis-and-exploitation-of-cve-2023-20938/offensivecon_24_binder.pdf&quot;&gt;How to Fuzz Your Way to Android Universal Root&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://conference.hitb.org/hitbsecconf2019ams/materials/D2T2%20-%20Binder%20-%20The%20Bridge%20to%20Root%20-%20Hongli%20Han%20&amp;amp;%20Mingjian%20Zhou.pdf&quot;&gt;Android Binder: The Bridge To Root&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=l38YQxrk7V8&quot;&gt;#HITB2019AMS D2T2 - Binder: The Bridge To Root - Hongli Han and Mingjian Zhou&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://googleprojectzero.blogspot.com/2019/11/bad-binder-android-in-wild-exploit.html&quot;&gt;Bad Binder: Android In-The-Wild Exploit&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=TAwQ4ezgEIo&quot;&gt;OffensiveCon20 - Maddie Stone - Bad Binder: Finding an Android In The Wild 0day&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://labs.bluefrostsecurity.de/blog/2020/03/31/cve-2020-0041-part-1-sandbox-escape/&quot;&gt;Exploiting CVE-2020-0041 - Part 1: Escaping the Chrome Sandbox&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Typhoon-Mangkhut-One-Click-Remote-Universal-Root-Formed-With-Two-Vulnerabilities.pdf&quot;&gt;Typhoon Mangkhut: One-click Remote Universal Root Formed with Two Vulnerabilities&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=a1vyt6iWmS4&quot;&gt;Typhoon Mangkhut: One-click Remote Universal Root Formed with Two Vulnerabilities&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://0xkol.github.io/assets/files/Racing_Against_the_Lock__Exploiting_Spinlock_UAF_in_the_Android_Kernel.pdf&quot;&gt;Racing Against the Lock: Exploiting Spinlock UAF in the Android Kernel&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=E3CVDOlcHC4&quot;&gt;OffensiveCon23 - Moshe Kol - Racing Against the Lock: Exploiting Spinlock UAF in the Android Kernel&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>CVE-2024-2887 Chrome Type Confusion漏洞分析</title><link>https://picoorg.github.io/posts/cve-2024-2887/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2024-2887/</guid><description>本文主要翻译了ZDI博客内容，水平有限以理解为主，后续计划增补PoC和补丁分析。</description><pubDate>Wed, 08 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E7%AE%80%E4%BB%8B&quot;&gt;1. 简介&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#2-%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0&quot;&gt;2. 漏洞成因&lt;/a&gt;&lt;/li&gt;
@@ -802,6 +847,7 @@ return true;
 &lt;li&gt;&lt;a href=&quot;#21-adb&quot;&gt;2.1. adb&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#22-fastboot&quot;&gt;2.2. fastboot&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#23-%E9%80%86%E5%90%91&quot;&gt;2.3. 逆向&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#24-%E7%B3%BB%E7%BB%9F%E8%AF%81%E4%B9%A6&quot;&gt;2.4 系统证书&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#3-frida&quot;&gt;3. Frida&lt;/a&gt;
@@ -876,6 +922,16 @@ ssh -R 9999:192.168.2.3:9999 root@1.1.1.1
 &lt;pre&gt;&lt;code&gt;adb reboot bootloader              # 进入fastboot
 
 adb shell am start -a android.intent.action.VIEW -d scheme:// # 访问指定url
+
+adb shell settings put global http_proxy 127.0.0.1:9999 # 设置代理
+
+adb shell settings put global http_proxy :0 # 取消代理
+
+setenforce 0 # 关闭SELinux
+
+setprop persist.device_config.runtime_native.usap_pool_enabled false # 关闭usap
+
+settings put system screen_off_timeout 100000000 # 设置屏幕常亮
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2&gt;2.2. fastboot&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;fastboot reboot                    # 重启
@@ -929,6 +985,37 @@ def main():
 
 if __name__ == &quot;__main__&quot;:
 	main()
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;2.4 系统证书&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;# 计算证书pem格式的hash
+openssl x509 -subject_old_hash -in a.pem
+
+# 重命名&amp;lt;hash&amp;gt;.0
+mv a.pem &amp;lt;hash&amp;gt;.0
+
+# Create a separate temp directory, to hold the current certificates
+# Without this, when we add the mount we can&apos;t read the current certs anymore.
+mkdir -m 700 /data/local/tmp/htk-ca-copy
+
+# Copy out the existing certificates
+cp /system/etc/security/cacerts/* /data/local/tmp/htk-ca-copy/
+
+# Create the in-memory mount on top of the system certs folder
+mount -t tmpfs tmpfs /system/etc/security/cacerts
+
+# Copy the existing certs back into the tmpfs mount, so we keep trusting them
+mv /data/local/tmp/htk-ca-copy/* /system/etc/security/cacerts/
+
+# Copy our new cert in, so we trust that too
+cp /data/local/tmp/&amp;lt;hash&amp;gt;.0  /system/etc/security/cacerts/
+
+# Update the perms &amp;amp; selinux context labels, so everything is as readable as before
+chown root:root /system/etc/security/cacerts/*
+chmod 644 /system/etc/security/cacerts/*
+chcon u:object_r:system_file:s0 /system/etc/security/cacerts/*
+
+# Delete the temp cert directory &amp;amp; this script itself
+rm -r /data/local/tmp/htk-ca-copy
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h1&gt;3. Frida&lt;/h1&gt;
 &lt;h2&gt;3.1. 堆栈打印&lt;/h2&gt;
