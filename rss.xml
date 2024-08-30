@@ -1106,4 +1106,188 @@ npx @electron/asar extract-file app.asar main.js #Extract a particular file:
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://ma.ttias.be/socks-proxy-linux-ssh-bypass-content-filters/#set-up-socks5-ssh-tunnel&quot;&gt;Create a SOCKS proxy on a Linux server with SSH to bypass content filters&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</content:encoded></item><item><title>qcow2取证分析环境构建</title><link>https://picoorg.github.io/posts/qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA/</link><guid isPermaLink="true">https://picoorg.github.io/posts/qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA/</guid><description>在日常工作中，难免遇到一些镜像分析工作，当我们采用人工分析时，需要的常见命令在本文中进行总结。</description><pubDate>Fri, 30 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA&quot;&gt;QCOW2取证分析环境构建&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%B8%80qcow2%E7%AE%80%E4%BB%8B&quot;&gt;一、QCOW2简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%BA%8Cqemu-img%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8&quot;&gt;二、qemu-img的基本使用&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%B8%89%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA&quot;&gt;三、分析环境构建&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#31-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%8C%82%E8%BD%BD&quot;&gt;3.1 文件系统挂载&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#32-linux%E9%95%9C%E5%83%8F%E5%AF%86%E7%A0%81%E4%BF%AE%E6%94%B9&quot;&gt;3.2 Linux镜像密码修改&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#321-virt-customize%E5%B7%A5%E5%85%B7&quot;&gt;3.2.1 virt-customize工具&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#312-guestfish%E6%89%8B%E5%8A%A8%E4%BF%AE%E6%94%B9&quot;&gt;3.1.2 guestfish手动修改&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#33-qemu%E5%90%AF%E5%8A%A8%E9%95%9C%E5%83%8F&quot;&gt;3.3 qemu启动镜像&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;QCOW2取证分析环境构建&lt;/h1&gt;
+&lt;p&gt;在日常工作中，难免遇到一些镜像分析工作，当我们采用人工分析时，需要的常见命令在本文中进行总结。&lt;/p&gt;
+&lt;h2&gt;一、QCOW2简介&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;KVM&lt;/code&gt;虚拟化中使用的镜像格式通常为&lt;code&gt;RAW&lt;/code&gt;和&lt;code&gt;QCOW2&lt;/code&gt;两种格式，&lt;code&gt;QCOW2&lt;/code&gt;镜像格式是目前虚拟化中主流的镜像格式。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/libyal/libqcow/blob/main/documentation/QEMU%20Copy-On-Write%20file%20format.asciidoc&quot;&gt;原文&lt;/a&gt;QEMU copy-on-write format with a range of special features, including the ability to take multiple snapshots, smaller images on filesystems that don’t support sparse files, optional AES encryption, and optional zlib compression.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;QCOW(QEMU copy-on-write)镜像文件具有一系列特性, 包括多重快照(能够创建基于之前镜像的新镜像，速度更快)，体积更小(不支持稀疏特性，不会预先分配指定&lt;code&gt;Size&lt;/code&gt;的存储空间)，可选&lt;code&gt;AES&lt;/code&gt;加密方式，可选&lt;code&gt;zlib&lt;/code&gt;压缩方式等功能。&lt;/p&gt;
+&lt;h2&gt;二、qemu-img的基本使用&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;创建 QCOW2 镜像文件&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img create -f qcow2 img.qcow2 4G
+Formatting &apos;img.qcow2&apos;, fmt=qcow2 size=4294967296 encryption=off cluster_size=65536 lazy_refcounts=off
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;查看 QCOW2 镜像文件信息&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img info img.qcow2
+image: img.qcow2
+file format: qcow2
+virtual size: 4.0G (4294967296 bytes)
+disk size: 196K
+cluster_size: 65536
+Format specific information:
+    compat: 1.1
+    lazy refcounts: false
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;创建 QCOW2 的快照&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img snapshot -c snap img.qcow2
+# 再次查看 QCOW2 镜像文件信息, 可以看见快照列表
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;删除 QCOW2 镜像文件的快照&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img snapshot -d snap img.qcow2
+# 再次查看 QCOW2 镜像文件信息, 可以看见快照被删除
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;快照恢复&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img snapshot -a snap img.qcow2
+# 以快照位置启动
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;QCOW2 镜像文件转换成 RAW 格式&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ qemu-img convert img.qcow2 -O raw raw.img
+# 转化为RAW格式
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;三、分析环境构建&lt;/h2&gt;
+&lt;p&gt;大部分工具包含在&lt;a href=&quot;https://libguestfs.org/&quot;&gt;libguestfs&lt;/a&gt;库中，相应工具下载&lt;code&gt;release&lt;/code&gt;版本&lt;code&gt;guestfs-tools&lt;/code&gt;即可。&lt;/p&gt;
+&lt;h3&gt;3.1 文件系统挂载&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;安装&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo apt-get install guestfs-tools
+guestfs-tools is already the newest version (1.52.0-3).
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;挂载&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 创建挂载点
+$ mkdir -p /mnt/qcow2
+# 只读模式
+$ sudo guestmount -a /path/to/img.qcow2 -i --ro /mnt/qcow2
+# 读写模式
+$ sudo guestmount -a /path/to/img.qcow2 -i /mnt/qcow2
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;3.2 Linux镜像密码修改&lt;/h3&gt;
+&lt;p&gt;当处于特殊情况无法获得Linux用户密码，启动镜像又无法登陆进系统时，就需要考虑通过修改镜像的方式强制更新密码。方法有很多，这里列举工具和手工两种方式&lt;/p&gt;
+&lt;h4&gt;3.2.1 virt-customize工具&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;安装&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo apt-get install guestfs-tools
+guestfs-tools is already the newest version (1.52.0-3).
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;修改root密码&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo virt-customize -a /path/to/img.qcow2 --root-password password:1234569
+[   0.0] Examining the guest ...
+[  15.0] Setting a random seed
+[  15.3] Setting passwords
+[  21.7] SELinux relabelling
+[  21.9] Finishing off
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4&gt;3.1.2 guestfish手动修改&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;安装&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo apt-get install libguestfs-tools
+libguestfs-tools is already the newest version (1:1.52.0-6.1).
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;生成随机密码&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ openssl passwd -1 123456
+$1$YA53Va4U$F1w1stz83NO8ee4kCgtzQ1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;进入文件系统&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;$ sudo guestfish --rw -a /path/to/img.qcow2
+
+Welcome to guestfish, the guest filesystem shell for
+editing virtual machine filesystems and disk images.
+
+Type: ‘help’ for help on commands
+    ‘man’ to read the manual
+    ‘quit’ to quit the shell
+
+&amp;gt;&amp;lt;fs&amp;gt; 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;修改密码&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;lt;fs&amp;gt; run
+100% ⟦▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒⟧ --:--
+&amp;gt;&amp;lt;fs&amp;gt; list-filesystems 
+/dev/sda1: unknown
+/dev/sda2: ext4
+&amp;gt;&amp;lt;fs&amp;gt; mount /dev/sda2 / # 选择文件系统挂载
+&amp;gt;&amp;lt;fs&amp;gt; vi /etc/shadow # 修改root密码为openssl生成的随机密码
+                     # 形如root:!!:19017:0:99999:7:::
+                     # 改为root:$1$YA53Va4U$F1w1stz83NO8ee4kCgtzQ1:19017:0:99999:7:::
+&amp;gt;&amp;lt;fs&amp;gt; quit
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;3.3 qemu启动镜像&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;qemu挂载文件系统&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# -hda: 镜像路径
+# -m: 内存
+# -net: 转发ssh端口到主机的40022
+$ qemu-system-x86_64 -hda /path/to/img.qcow2 -m 8G -net nic -net user,hostfwd=tcp::40022-:22
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;qemu serial console登陆&lt;/p&gt;
+&lt;p&gt;直接输入账号root和修改后的密码123456即可。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;localhost login: root
+password:
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;ssh登陆&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 根据提示输入密码
+$ ssh root@localhost -p40022
+root@localhost&apos;s password:
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
 </content:encoded></item></channel></rss>
