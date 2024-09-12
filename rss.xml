@@ -1,4 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>Android漏洞分析</title><link>https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><pubDate>Wed, 15 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Android简介&lt;/h1&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Pico Org</title><description>Pico组织博客</description><link>https://picoorg.github.io/</link><language>zh_CN</language><item><title>Android BAL Bypass攻击面分析</title><link>https://picoorg.github.io/posts/android-bal-bypass%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android-bal-bypass%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><pubDate>Tue, 03 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Android BAL Bypass攻击面分析&lt;/h1&gt;
+&lt;h2&gt;一、Android BAL&lt;/h2&gt;
+&lt;p&gt;后台弹窗(&lt;code&gt;BAL, Background Activity Launch&lt;/code&gt;)在Android 10以前是被允许的，恶意APP利用这种特性，在用户正常使用手机时弹出，和PC端的桌面窗口广告类似，会覆盖整个屏幕或弹窗。比如在进入后台直接唤起自身，代码如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public class MainActivity extends Activity {
+    ...
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(intent);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;a href=&quot;https://developer.android.com/guide/components/activities/background-starts?hl=zh-cn&quot;&gt;Google&lt;/a&gt;在Android 10引入后台&lt;code&gt;Activity&lt;/code&gt;启动限制：Android 10（API 级别 29）及更高版本会限制应用何时可以启动&lt;code&gt;activity&lt;/code&gt;背景。这些限制有助于最大限度地减少对用户的干扰，让用户能够更好地控制其屏幕上显示的内容。但为了保障系统和部分应用功能，BAL在设计之初同时引入了一批白名单限制，这也给恶意应用带来了一些绕过限制的可能。&lt;/p&gt;
+&lt;h3&gt;1.1 BAL限制逻辑&lt;/h3&gt;
+&lt;p&gt;主要逻辑位于&lt;code&gt;WMS&lt;/code&gt;服务中的&lt;code&gt;ActivityStarter&lt;/code&gt;，具体代码在&lt;code&gt;platform/frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java&lt;/code&gt;&lt;/p&gt;
+&lt;h3&gt;1.2 BAL白名单&lt;/h3&gt;
+&lt;h2&gt;二、Bypass Case&lt;/h2&gt;
+&lt;h3&gt;2.1 CVE-2023-40109&lt;/h3&gt;
+&lt;p&gt;https://android.googlesource.com/platform/frameworks/base/+/387d258cf10a30537fc48dc0e48d28071efa92e7&lt;/p&gt;
+&lt;h3&gt;2.2 CVE-2024-0034&lt;/h3&gt;
+&lt;p&gt;https://android.googlesource.com/platform/frameworks/base/+/653f7b0d234693309dc86161af01831b64033fe6&lt;/p&gt;
+&lt;h3&gt;2.3&lt;/h3&gt;
+&lt;h2&gt;三、参考文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://mp.weixin.qq.com/s/hGx8FNjI37trnZehY839bQ&quot;&gt;恶意App后台弹窗技术手法分析&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://developer.android.com/guide/components/activities/background-starts?hl=zh-cn&quot;&gt;针对从后台启动 activity 的限制&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://wrlus.com/android-security/bindservice-error-handle/&quot;&gt;BindService错误处理与CVE-2023-21138 &amp;amp; CVE-2023-40130&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://blog.canyie.top/2024/04/18/android-security-bulletin-index/&quot;&gt;Android 每月安全补丁分析索引&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>Android漏洞分析</title><link>https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android-framework%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><pubDate>Wed, 15 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Android简介&lt;/h1&gt;
 &lt;h1&gt;Android Binder&lt;/h1&gt;
 &lt;h1&gt;Bundle mismatch&lt;/h1&gt;
 &lt;h1&gt;LaunchAnyWhere&lt;/h1&gt;
@@ -1105,6 +1136,524 @@ npx @electron/asar extract-file app.asar main.js #Extract a particular file:
 &lt;h1&gt;10. 参考文献&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://ma.ttias.be/socks-proxy-linux-ssh-bypass-content-filters/#set-up-socks5-ssh-tunnel&quot;&gt;Create a SOCKS proxy on a Linux server with SSH to bypass content filters&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>iOS逆向指路</title><link>https://picoorg.github.io/posts/ios%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</link><guid isPermaLink="true">https://picoorg.github.io/posts/ios%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</guid><description>iOS逆向过程比较基础的内容，方便快速查找各阶段所用到的知识。</description><pubDate>Wed, 11 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#ios-%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF&quot;&gt;iOS 逆向指路&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%B8%80%E8%B6%8A%E7%8B%B1&quot;&gt;一、越狱&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#11-palera1n&quot;&gt;1.1 palera1n&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#12-checkra1n&quot;&gt;1.2 Checkra1n&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%BA%8C%E7%A0%B8%E5%A3%B3&quot;&gt;二、砸壳&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#21-frida-ios-dump&quot;&gt;2.1 frida-ios-dump&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%B8%89%E5%A4%B4%E6%96%87%E4%BB%B6%E5%AF%BC%E5%87%BA&quot;&gt;三、头文件导出&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E5%9B%9Bhook-%E5%8F%8A%E5%8A%A8%E6%80%81%E5%BA%93%E6%B3%A8%E5%85%A5&quot;&gt;四、HOOK 及动态库注入&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#41-theos-%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E5%8F%8A-tweak&quot;&gt;4.1 theos 编译工具及 tweak&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#411-tweak-%E5%AE%89%E8%A3%85%E7%8E%AF%E5%A2%83%E5%8F%8A%E7%BC%96%E8%AF%91%E8%BF%87%E7%A8%8B&quot;&gt;4.1.1 tweak 安装环境及编译过程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#412-tweak-%E4%BB%A3%E7%A0%81%E7%BC%96%E5%86%99%E5%8F%8A-logos&quot;&gt;4.1.2 tweak 代码编写及 Logos&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E4%BA%94%E6%89%93%E5%8C%85%E9%87%8D%E7%AD%BE%E5%90%8D%E5%AE%89%E8%A3%85&quot;&gt;五、打包、重签名、安装&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#51-monkeydev-%E6%89%93%E5%8C%85&quot;&gt;5.1 MonkeyDev 打包&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#511-%E5%AE%89%E8%A3%85%E4%B8%8E%E5%8D%B8%E8%BD%BD&quot;&gt;5.1.1 安装与卸载&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#512-monkeydev-%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE&quot;&gt;5.1.2 MonkeyDev 环境配置&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#513-%E5%88%9B%E5%BB%BA%E5%B7%A5%E7%A8%8B&quot;&gt;5.1.3 创建工程&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#52-ios-app-signer-%E9%87%8D%E7%AD%BE%E5%90%8D&quot;&gt;5.2 iOS APP Signer 重签名&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#53-%E5%AE%89%E8%A3%85&quot;&gt;5.3 安装&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE&quot;&gt;参考文献&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;iOS 逆向指路&lt;/h1&gt;
+&lt;h2&gt;一、越狱&lt;/h2&gt;
+&lt;h3&gt;1.1 palera1n&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://palera.in/&quot;&gt;palera1n&lt;/a&gt;的核心是利用&lt;code&gt;checkm8&lt;/code&gt;漏洞，这是一个影响从&lt;code&gt;A8&lt;/code&gt;到&lt;code&gt;A11&lt;/code&gt;芯片的低级别硬件漏洞，允许不受限制的访问设备的&lt;code&gt;BootROM&lt;/code&gt;。项目中的&lt;code&gt;loader&lt;/code&gt;应用负责引导越狱过程，而&lt;code&gt;jbinit&lt;/code&gt;则在系统内核层面进行操作，确保越狱的持久性和可靠性。定制的&lt;code&gt;PongoOS&lt;/code&gt;是一个特别设计的操作系统层，用于增强越狱后的设备功能和性能。&lt;code&gt;palera1n&lt;/code&gt;越狱支持&lt;code&gt;A8-A11&lt;/code&gt;设备，注意&lt;code&gt;iOS16&lt;/code&gt;以上需重置设备。完整列表如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;iPhone(s)&lt;/th&gt;
+&lt;th&gt;iPad(s)&lt;/th&gt;
+&lt;th&gt;iPod(s)&lt;/th&gt;
+&lt;th&gt;Apple TV(s)&lt;/th&gt;
+&lt;th&gt;Apple T2&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 6s&lt;/td&gt;
+&lt;td&gt;iPad mini 4&lt;/td&gt;
+&lt;td&gt;iPod Touch (7th generation)&lt;/td&gt;
+&lt;td&gt;Apple TV HD&lt;/td&gt;
+&lt;td&gt;Apple T2 iMac20,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 6s Plus&lt;/td&gt;
+&lt;td&gt;iPad (5th generation)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple TV 4K (1st generation)&lt;/td&gt;
+&lt;td&gt;Apple T2 iMac20,2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone SE (2016)&lt;/td&gt;
+&lt;td&gt;iPad (6th generation)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookAir8,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 7&lt;/td&gt;
+&lt;td&gt;iPad (7th generation)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookAir8,2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 7 Plus&lt;/td&gt;
+&lt;td&gt;iPad Pro (9.7&quot;)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookAir9,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 8&lt;/td&gt;
+&lt;td&gt;iPad Pro (12.9&quot;) (1st generation)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro15,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone 8 Plus&lt;/td&gt;
+&lt;td&gt;iPad Pro (10.5&quot;)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro15,2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;iPhone X&lt;/td&gt;
+&lt;td&gt;iPad Pro (12.9&quot;) (2nd generation)&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro15,3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;iPad Air 2&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro15,4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro16,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro16,2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro16,3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacBookPro16,4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 iMacPro1,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 Macmini8,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;Apple T2 MacPro7,1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;iBridge2,11 (Unknown Mac)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;td&gt;iBridge2,13 (Unknown Mac)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;下载地址在 &lt;a href=&quot;https://github.com/palera1n/palera1n/releases&quot;&gt;github release&lt;/a&gt;，以无根&lt;code&gt;rootless&lt;/code&gt;越狱模式执行，如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# 避免各种报错
+# 执行权限
+$ chmod +x ./palera1n-macos-universal
+# 清除附加属性
+$ xattr -c ./palera1n-macos-universal
+# 执行
+$ ./palera1n-macos-universal -l
+#
+# palera1n: v2.0
+#
+# ========  Made by  =======
+# Made by: Nick Chan, Ploosh, Khcrysalis, Mineek, staturnz, kok3shidoll, HAHALOSAH
+# ======== Thanks to =======
+# Thanks to: llsc12, Nebula, Lrdsnow, nikias (libimobiledevice),
+# checkra1n team (Siguza, axi0mx, littlelailo et al.),
+# Procursus Team (Hayden Seay, Cameron Katri, Keto et.al)
+# ==========================
+
+ - [09/11/24 17:58:32] &amp;lt;Info&amp;gt;: Waiting for devices
+ - [09/11/24 17:58:32] &amp;lt;Info&amp;gt;: Entering recovery mode
+ - [09/11/24 17:58:44] &amp;lt;Info&amp;gt;: Press Enter when ready for DFU mode
+
+Hold volume down + side button (0)
+Hold volume down button (4)
+ - [09/11/24 17:58:56] &amp;lt;Info&amp;gt;: Device entered DFU mode successfully
+ - [09/11/24 17:58:57] &amp;lt;Info&amp;gt;: About to execute checkra1n
+#
+# Checkra1n 0.1337.2
+#
+# Proudly written in nano
+# (c) 2019-2023 Kim Jong Cracks
+#
+#========  Made by  =======
+# argp, axi0mx, danyl931, jaywalker, kirb, littlelailo, nitoTV
+# never_released, nullpixel, pimskeks, qwertyoruiop, sbingner, siguza
+#======== Thanks to =======
+# haifisch, jndok, jonseals, xerub, lilstevie, psychotea, sferrini
+# Cellebrite (ih8sn0w, cjori, ronyrus et al.)
+#==========================
+
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: Starting thread for Apple TV 4K Advanced board
+ - [09/11/24 17:58:57] &amp;lt;Info&amp;gt;: Waiting for DFU mode devices
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: DFU mode device found
+ - [09/11/24 17:58:57] &amp;lt;Info&amp;gt;: Checking if device is ready
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: Attempting to perform checkm8 on 8015 11
+ - [09/11/24 17:58:57] &amp;lt;Info&amp;gt;: Setting up the exploit
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: == checkm8 setup stage ==
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: Entered initial checkm8 state after 1 steps
+ - [09/11/24 17:58:57] &amp;lt;Verbose&amp;gt;: Stalled input endpoint after 1 steps
+ - [09/11/24 17:58:58] &amp;lt;Verbose&amp;gt;: DFU mode device disconnected
+ - [09/11/24 17:58:58] &amp;lt;Verbose&amp;gt;: DFU mode device found
+ - [09/11/24 17:58:58] &amp;lt;Verbose&amp;gt;: == checkm8 trigger stage ==
+ - [09/11/24 17:58:58] &amp;lt;Info&amp;gt;: Checkmate!
+ - [09/11/24 17:58:58] &amp;lt;Verbose&amp;gt;: Device should now reconnect in download mode
+ - [09/11/24 17:58:58] &amp;lt;Verbose&amp;gt;: DFU mode device disconnected
+ - [09/11/24 17:59:18] &amp;lt;Error&amp;gt;: Timed out waiting for download mode (error code: -status_exploit_timeout_error)
+ - [09/11/24 18:00:32] &amp;lt;Info&amp;gt;: Entered download mode
+ - [09/11/24 18:00:32] &amp;lt;Verbose&amp;gt;: Download mode device found
+ - [09/11/24 18:00:32] &amp;lt;Info&amp;gt;: Booting PongoOS...
+ - [09/11/24 18:00:34] &amp;lt;Info&amp;gt;: Found PongoOS USB Device
+ - [09/11/24 18:00:35] &amp;lt;Info&amp;gt;: Booting Kernel...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;1.2 Checkra1n&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://checkra.in/&quot;&gt;Checkra1n&lt;/a&gt;越狱支持&lt;code&gt;A5-A17&lt;/code&gt;设备，&lt;code&gt;iOS 16.6 - iOS 17.x.x&lt;/code&gt;系统。（注意有很多仿冒域名）&lt;/p&gt;
+&lt;h2&gt;二、砸壳&lt;/h2&gt;
+&lt;h3&gt;2.1 frida-ios-dump&lt;/h3&gt;
+&lt;h2&gt;三、头文件导出&lt;/h2&gt;
+&lt;h2&gt;四、HOOK 及动态库注入&lt;/h2&gt;
+&lt;h3&gt;4.1 theos 编译工具及 tweak&lt;/h3&gt;
+&lt;h4&gt;4.1.1 tweak 安装环境及编译过程&lt;/h4&gt;
+&lt;pre&gt;&lt;code&gt;# 安装theos
+$ sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
+# 安装ldid
+$ brew install ldid
+# 环境
+$ export PATH=/opt/theos/bin:$PATH
+$ export THEOS=/opt/theos
+# 根据命令行提示创建tweak项目
+$ /opt/theos/bin/nic.pl
+NIC 2.0 - New Instance Creator
+------------------------------
+[1.] iphone/activator_event
+[2.] iphone/activator_listener
+[3.] iphone/application
+[4.] iphone/application_swift
+[5.] iphone/application_swiftui
+[6.] iphone/control_center_module-11up
+[7.] iphone/cydget
+[8.] iphone/flipswitch_switch
+[9.] iphone/framework
+[10.] iphone/library
+[11.] iphone/notification_center_widget
+[12.] iphone/notification_center_widget-7up
+[13.] iphone/null
+[14.] iphone/preference_bundle
+[15.] iphone/preference_bundle_swift
+[16.] iphone/theme
+[17.] iphone/tool
+[18.] iphone/tool_swift
+[19.] iphone/tweak
+[20.] iphone/tweak_swift
+[21.] iphone/tweak_with_simple_preferences
+[22.] iphone/xpc_service
+[23.] iphone/xpc_service_modern
+Choose a Template (required): 19
+Project Name (required): aaa # 注入包的名字
+Package Name [com.yourcompany.aaa]: bbb.ccc # 注入包的名字
+Author/Maintainer Name [ddd]: ddd # 作者名
+[iphone/tweak] MobileSubstrate Bundle filter [com.apple.springboard]: com.apple.springboard # 目标包名
+[iphone/tweak] List of applications to terminate upon installation (space-separated, &apos;-&apos; for none) [SpringBoard]: SpringBoard # 目标应用名
+Instantiating iphone/tweak in aaa/...
+Done.
+# 编译
+make clean &amp;amp;&amp;amp; make
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;其中，原始&lt;code&gt;makefile&lt;/code&gt;如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;TARGET := iphone:clang:latest:7.0
+INSTALL_TARGET_PROCESSES = &apos;SpringBoard&apos;
+
+
+include $(THEOS)/makefiles/common.mk
+
+TWEAK_NAME = aaa
+
+aaa_FILES = Tweak.x
+aaa_CFLAGS = -fobjc-arc
+
+include $(THEOS_MAKE_PATH)/tweak.mk
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过对&lt;code&gt;makefile&lt;/code&gt;编译选项配置实现项目定制化编译，其中可能用到的配置如：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;指定处理器架构：ARCHS = armv7 arm64&lt;/li&gt;
+&lt;li&gt;指定 SDK 版本：TARGET = iphone:latest:8.0&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4&gt;4.1.2 tweak 代码编写及 Logos&lt;/h4&gt;
+&lt;h2&gt;五、打包、重签名、安装&lt;/h2&gt;
+&lt;h3&gt;5.1 MonkeyDev 打包&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/AloneMonkey/MonkeyDev&quot;&gt;MonkeyDev&lt;/a&gt; 是&lt;code&gt;iOS&lt;/code&gt;集成开发环境，支持越狱和非越狱情况下的多种注入模式，且完美适配&lt;code&gt;iOS&lt;/code&gt;打包签名流程。&lt;code&gt;MonkeyDev&lt;/code&gt;内部自带砸壳支持，使用前需要先按说明进行配置&lt;a href=&quot;https://github.com/AloneMonkey/frida-ios-dump&quot;&gt;frida-ios-dump&lt;/a&gt;。&lt;/p&gt;
+&lt;h4&gt;5.1.1 安装与卸载&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;安装最新的&lt;code&gt;theos&lt;/code&gt;和&lt;code&gt;ldid&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;# 安装theos
+$ sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
+# 安装ldid
+$ brew install ldid
+# 环境
+$ export PATH=/opt/theos/bin:$PATH
+$ export THEOS=/opt/theos
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在越狱环境下需要配置免密码登录&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;$ ssh-keygen -t rsa -P &apos;&apos;
+$ ssh-copy-id -i /Users/username/.ssh/id_rsa root@ip
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;安装 MonkeyDev 集成环境&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;# 指定xcode
+$ sudo xcode-select -s /Applications/Xcode-beta.app
+# 指定默认xcode
+$ xcode-select -p
+# 安装
+$ sudo /bin/sh -c &quot;$(curl -fsSL https://raw.githubusercontent.com/AloneMonkey/MonkeyDev/master/bin/md-install)&quot;
+# 更新
+$ sudo /bin/sh -c &quot;$(curl -fsSL https://raw.githubusercontent.com/AloneMonkey/MonkeyDev/master/bin/md-update)&quot;
+# 卸载
+$ sudo /bin/sh -c &quot;$(curl -fsSL https://raw.githubusercontent.com/AloneMonkey/MonkeyDev/master/bin/md-uninstall)&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4&gt;5.1.2 MonkeyDev 环境配置&lt;/h4&gt;
+&lt;p&gt;一般使用默认配置，同样可以在&lt;code&gt;~/.zshrc&lt;/code&gt;或者&lt;code&gt;~/.bash_profile&lt;/code&gt;配置文件中设置导出环境变量，如:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;export MonkeyDevDeviceIP=localhost
+export MonkeyDevDevicePort=22
+&lt;/code&gt;&lt;/pre&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;设置项&lt;/th&gt;
+&lt;th&gt;意义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevBuildPackageOnAnyBuild&lt;/td&gt;
+&lt;td&gt;每次 build 都生成 deb 包&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevCopyOnBuild&lt;/td&gt;
+&lt;td&gt;build 的时将 deb 包拷贝到设备的/var/root/MonkeyDevBuilds/目录&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevDeviceIP&lt;/td&gt;
+&lt;td&gt;目标设备的 ip 地址，默认 USB 连接，localhost&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevDevicePort&lt;/td&gt;
+&lt;td&gt;目标设备的端口，默认 22&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevDevicePassword&lt;/td&gt;
+&lt;td&gt;目标设备的 ssh 登录密码，默认为空使用免密码登录&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevInstallOnAnyBuild&lt;/td&gt;
+&lt;td&gt;每次 build 都将 deb 安装到设备&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevInstallOnProfiling&lt;/td&gt;
+&lt;td&gt;点击 Profile 才将 deb 安装到设备&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevKillProcessOnInstall&lt;/td&gt;
+&lt;td&gt;安装的时候杀掉指定的进程，填写进程名&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevClearUiCacheOnInstall&lt;/td&gt;
+&lt;td&gt;安装时 clear uicache&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevPath&lt;/td&gt;
+&lt;td&gt;MonkeyDev 的安装路径，默认的，不用修改&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MonkeyDevTheosPath&lt;/td&gt;
+&lt;td&gt;theos 的安装路径&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h4&gt;5.1.3 创建工程&lt;/h4&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;xcode&lt;/code&gt;里点击&lt;code&gt;File - New - Project...&lt;/code&gt;创建&lt;code&gt;iOS&lt;/code&gt;项目，选择&lt;code&gt;MonkeyApp&lt;/code&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&quot;image.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;然后填写&lt;code&gt;Product Name&lt;/code&gt;，在&lt;code&gt;Target App&lt;/code&gt;填写目标&lt;code&gt;App&lt;/code&gt;的名字或者&lt;code&gt;bundle id&lt;/code&gt;，工具将会自动使用&lt;a href=&quot;https://github.com/AloneMonkey/frida-ios-dump&quot;&gt;frida-ios-dump&lt;/a&gt;提取&lt;code&gt;ipa&lt;/code&gt;文件，如果是非越狱环境集成 APP，可忽略&lt;code&gt;Target App&lt;/code&gt;，如下所示:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&quot;image-1.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;在项目中将砸壳后的&lt;code&gt;ipa&lt;/code&gt;文件拖至&lt;code&gt;TargetApp&lt;/code&gt;中，同样有一些参数需要被关注，如下所示：&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&quot;image-4.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;参数&lt;/th&gt;
+&lt;th&gt;值&lt;/th&gt;
+&lt;th&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ENABLE_BITCODE&lt;/td&gt;
+&lt;td&gt;NO&lt;/td&gt;
+&lt;td&gt;支持 Bitcode 编译&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_ADD_SUBSTRATE&lt;/td&gt;
+&lt;td&gt;YES&lt;/td&gt;
+&lt;td&gt;添加 MobileSubstrate&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_CLASS_DUMP&lt;/td&gt;
+&lt;td&gt;NO&lt;/td&gt;
+&lt;td&gt;使用 frida-ios-dump 提取类名&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_DEFAULT_BUNDLEID&lt;/td&gt;
+&lt;td&gt;YES&lt;/td&gt;
+&lt;td&gt;使用 info.plist 中的 bundleID 而非项目 bundleID&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_INSERT_DYLIB&lt;/td&gt;
+&lt;td&gt;YES&lt;/td&gt;
+&lt;td&gt;支持动态库插入&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_RESTORE_SYMBOL&lt;/td&gt;
+&lt;td&gt;NO&lt;/td&gt;
+&lt;td&gt;保留编译符号&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;MONKEYDEV_TARGET_APP&lt;/td&gt;
+&lt;td&gt;Optional&lt;/td&gt;
+&lt;td&gt;指定砸壳应用&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;PODS_CONFIGURATION_BUILD_DIR&lt;/td&gt;
+&lt;td&gt;$BUILD_DIR/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)&lt;/td&gt;
+&lt;td&gt;Pods 构建配置目录&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;PODS_ROOT&lt;/td&gt;
+&lt;td&gt;${SRCROOT}/Pods&lt;/td&gt;
+&lt;td&gt;Pods 根目录&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;monkeydev&lt;/code&gt;本身支持注入代码编写，同时支持多种注入框架&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;如步骤 3 图所示，&lt;code&gt;bbbDyib&lt;/code&gt;是注入代码编写位置&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;bbbDyib.h&lt;/code&gt;、&lt;code&gt;bbbDyib.m&lt;/code&gt;：原生注入框架&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Logos&lt;/code&gt;：&lt;code&gt;tweak&lt;/code&gt;框架&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Config&lt;/code&gt;：这个是&lt;code&gt;cycript&lt;/code&gt;的一些脚本下载以及&lt;code&gt;methodtrace&lt;/code&gt;配置代码&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;LLDBTools&lt;/code&gt;：这个是用于&lt;code&gt;LLDB&lt;/code&gt;调试的代码，比如&lt;code&gt;po pviews()&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;AntiAntiDebug&lt;/code&gt;：这个里面是反反调试的代码&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fishhook&lt;/code&gt;：这个是自动集成的&lt;code&gt;fishhook&lt;/code&gt;模块&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol&gt;
+&lt;li&gt;编译后打包成&lt;code&gt;ipa&lt;/code&gt;文件，直接调用&lt;code&gt;项目目录/LatestBuild/createIPA.command&lt;/code&gt;即可&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;5.2 iOS APP Signer 重签名&lt;/h3&gt;
+&lt;p&gt;软件比较简单易用，按顺序选择输入&lt;code&gt;ipa&lt;/code&gt;文件，选择签名证书，选择&lt;code&gt;Provisioning Profile&lt;/code&gt;，然后点击&lt;code&gt;start&lt;/code&gt;即可。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-3.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;h3&gt;5.3 安装&lt;/h3&gt;
+&lt;p&gt;通过 xcode 安装或者使用三方工具安装（如爱思）,如果安装不成功且无有效日志，可以通过控制台查看设备日志，进程名为&lt;code&gt;installd&lt;/code&gt;：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-2.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;参考文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/AloneMonkey/MonkeyDev&quot;&gt;AloneMonkey/MonkeyDev: CaptainHook Tweak、Logos Tweak and Command-line Tool、Patch iOS Apps, Without Jailbreak.&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/theos/theos&quot;&gt;theos/theos: A cross-platform suite of tools for building and deploying software for iOS and other platforms.&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/TKkk-iOSer/TKTweakDemo&quot;&gt;TKkk-iOSer/TKTweakDemo: iOS 逆向 -- 简单 hook 微信，实现 hello World&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/AloneMonkey/frida-ios-dump&quot;&gt;AloneMonkey/frida-ios-dump: pull decrypted ipa from jailbreak device&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/DanTheMan827/ios-app-signer&quot;&gt;DanTheMan827/ios-app-signer: This is an app for OS X that can (re)sign apps and bundle them into ipa files that are ready to be installed on an iOS device.&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.i4.cn/&quot;&gt;爱思助手&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://checkra.in/&quot;&gt;checkra1n&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://palera.in/&quot;&gt;palera1n&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://medium.com/@q1539350820/ios-osx%E9%80%86%E5%90%91%E5%8E%BB%E9%99%A4%E5%BA%94%E7%94%A8bundleid%E6%A0%A1%E9%AA%8C-ff63444e1282&quot;&gt;IOS+OSX 逆向去除应用 Bundleid 校验&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/WangErice/article/details/102611355&quot;&gt;应用代码注入&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </content:encoded></item><item><title>qcow2取证分析环境构建</title><link>https://picoorg.github.io/posts/qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA/</link><guid isPermaLink="true">https://picoorg.github.io/posts/qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA/</guid><description>在日常工作中，难免遇到一些镜像分析工作，当我们采用人工分析时，需要的常见命令在本文中进行总结。</description><pubDate>Fri, 30 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#qcow2%E5%8F%96%E8%AF%81%E5%88%86%E6%9E%90%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA&quot;&gt;QCOW2取证分析环境构建&lt;/a&gt;
