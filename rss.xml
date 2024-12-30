@@ -1171,7 +1171,7 @@ return true;
 &lt;li&gt;&lt;a href=&quot;https://www.ruanyifeng.com/blog/2019/04/oauth_design.html&quot;&gt;OAuth 2.0 的一个简单解释&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://openid.net/connect/&quot;&gt;OpenID Connect&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-</content:encoded></item><item><title>cheetsheet</title><link>https://picoorg.github.io/posts/cheetsheet/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cheetsheet/</guid><description>CheetSheet，快速检索常见Tips。</description><pubDate>Sat, 11 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+</content:encoded></item><item><title>cheatsheet</title><link>https://picoorg.github.io/posts/cheatsheet/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cheatsheet/</guid><description>CheatSheet，快速检索常见Tips。</description><pubDate>Sat, 11 May 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E4%BB%A3%E7%90%86&quot;&gt;1. 代理&lt;/a&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#11-ssh&quot;&gt;1.1. ssh&lt;/a&gt;&lt;/li&gt;
@@ -1183,6 +1183,13 @@ return true;
 &lt;li&gt;&lt;a href=&quot;#22-fastboot&quot;&gt;2.2. fastboot&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#23-%E9%80%86%E5%90%91&quot;&gt;2.3. 逆向&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#24-%E7%B3%BB%E7%BB%9F%E8%AF%81%E4%B9%A6&quot;&gt;2.4. 系统证书&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#25-pixel%E5%88%B7%E6%9C%BA&quot;&gt;2.5. pixel刷机&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#251-%E5%8F%8C%E6%B8%85%E5%9B%9B%E6%B8%85%E5%85%AD%E6%B8%85&quot;&gt;2.5.1. 双清/四清/六清&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#252-%E5%8D%A1%E5%88%B7&quot;&gt;2.5.2. 卡刷&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#253-%E7%BA%BF%E5%88%B7&quot;&gt;2.5.3. 线刷&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;#3-frida&quot;&gt;3. Frida&lt;/a&gt;
@@ -1353,6 +1360,44 @@ chcon u:object_r:system_file:s0 /system/etc/security/cacerts/*
 # Delete the temp cert directory &amp;amp; this script itself
 rm -r /data/local/tmp/htk-ca-copy
 &lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;2.5. pixel刷机&lt;/h2&gt;
+&lt;p&gt;tips:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;网友建议刷机前四清，防止意外阻止刷机&lt;/li&gt;
+&lt;li&gt;线刷相当于底层替换所有镜像，数据不会保留；卡刷相当于更新系统，数据会保留。（个人理解起名卡刷是因为该模式可以选择&lt;code&gt;Apply update from SD card&lt;/code&gt;）&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;2.5.1. 双清/四清/六清&lt;/h3&gt;
+&lt;p&gt;★★普通双清★★
+普通双清就是在recovery模式下选择：&lt;/p&gt;
+&lt;p&gt;1：清除数据恢复出厂（wipe data/factory reset）
+备注：清除/data(程序数据)和/cache(系统缓存)两个分区（清除用户信息和软件信息），在常用的CWM里（如CWM-based Recovery v6.0.5.0），还包括格式化/sd-ext和/sdcard/.android_secure这两个分区；&lt;/p&gt;
+&lt;p&gt;2：清除cache分区（wipe cache partition）
+说明：仅格式化/cache这一个分区(清除系统缓存)，只是用在刷完系统后出现问题，恢复还原用的！&lt;/p&gt;
+&lt;p&gt;★★四清解释★★
+所谓刷机四清就是在双清的基础上，增加下面两项：&lt;/p&gt;
+&lt;p&gt;3：Wipe dalvik cache （清除缓存）
+说明：高级功能 -&amp;gt; 清除dalvik cache
+备注：安卓系统启动时，需要建立一个所有程序的信任分支，以优化缓存文件，以加快启动速度。wipe或者新刷系统后，初次启动很慢，就是因为没有建立这个文件，以后启动就会加快。&lt;/p&gt;
+&lt;p&gt;4：格式化 / system（格式化系统分区）
+说明：挂载和大容量存储 -&amp;gt; 格式化 / system&lt;/p&gt;
+&lt;p&gt;★★六清解释★★
+所谓刷机六清就是在上面四清的基础上，增加下面两项：&lt;/p&gt;
+&lt;p&gt;5：格式化 / sdcard（格式化手机内置存储卡）
+说明：挂载和大容量存储 -&amp;gt; 格式化 / sdcard&lt;/p&gt;
+&lt;p&gt;6：格式化 / storage / extsdcard（格式化手机外置TF卡）&lt;/p&gt;
+&lt;h3&gt;2.5.2. 卡刷&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;Google&lt;/code&gt;&lt;a href=&quot;https://developers.google.com/android/ota&quot;&gt;页面&lt;/a&gt;拉到底部点击&lt;code&gt;Acknowledge&lt;/code&gt;出现下载列表，下载对应型号镜像&lt;/li&gt;
+&lt;li&gt;执行&lt;code&gt;adb reboot recovery&lt;/code&gt;进入&lt;code&gt;Recovery&lt;/code&gt;模式&lt;/li&gt;
+&lt;li&gt;进入&lt;code&gt;Recovery&lt;/code&gt;模式显示&lt;code&gt;no command&lt;/code&gt;后，按住&lt;code&gt;power&lt;/code&gt;键然后按一下&lt;code&gt;volume up&lt;/code&gt;键进入选项菜单选择&lt;code&gt;Apply update from ADB&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;执行&lt;code&gt;adb sideload &amp;lt;ota file&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;2.5.3. 线刷&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;Google&lt;/code&gt;&lt;a href=&quot;https://developers.google.com/android/images&quot;&gt;页面&lt;/a&gt;拉到底部点击&lt;code&gt;Acknowledge&lt;/code&gt;出现下载列表，下载对应型号镜像&lt;/li&gt;
+&lt;li&gt;使用&lt;code&gt;unzip&lt;/code&gt;解压下载的文件&lt;/li&gt;
+&lt;li&gt;执行&lt;code&gt;flash-all.sh&lt;/code&gt;或&lt;code&gt;flash-all.bat&lt;/code&gt;脚本&lt;/li&gt;
+&lt;/ol&gt;
 &lt;h1&gt;3. Frida&lt;/h1&gt;
 &lt;h2&gt;3.1. 堆栈打印&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;Java.perform(function () {
@@ -1475,6 +1520,7 @@ npx @electron/asar extract-file app.asar main.js #Extract a particular file:
 &lt;h1&gt;11. 参考文献&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://ma.ttias.be/socks-proxy-linux-ssh-bypass-content-filters/#set-up-socks5-ssh-tunnel&quot;&gt;Create a SOCKS proxy on a Linux server with SSH to bypass content filters&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://bbs.oneplus.com/thread/2743808&quot;&gt;详细解释双清/四清/六清&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </content:encoded></item><item><title>iOS逆向指路</title><link>https://picoorg.github.io/posts/ios%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</link><guid isPermaLink="true">https://picoorg.github.io/posts/ios%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</guid><description>iOS逆向过程比较基础的内容，方便快速查找各阶段所用到的知识。</description><pubDate>Wed, 11 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;#1-%E8%B6%8A%E7%8B%B1&quot;&gt;1. 越狱&lt;/a&gt;
