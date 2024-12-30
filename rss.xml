@@ -2190,4 +2190,39 @@ root@localhost&apos;s password:
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
+</content:encoded></item><item><title>迅雷Mac版相关分析</title><link>https://picoorg.github.io/posts/%E8%BF%85%E9%9B%B7mac%E7%89%88%E7%9B%B8%E5%85%B3%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/%E8%BF%85%E9%9B%B7mac%E7%89%88%E7%9B%B8%E5%85%B3%E5%88%86%E6%9E%90/</guid><description>近期使用下载任务需要修改保存位置，这里记录下相关分析。</description><pubDate>Mon, 30 Dec 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h2&gt;分析过程&lt;/h2&gt;
+&lt;p&gt;资源数据主要有三个路径：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;主要配置：&lt;code&gt;/Users/mac/Library/Application Support/Thunder&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;崩溃日志：&lt;code&gt;/Users/mac/Library/Application Support/com.xunlei.Thunder&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;缓存文件：&lt;code&gt;/Users/mac/Library/Caches/com.xunlei.Thunder&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;目标为修改下载任务需要修改保存位置，因此在主要配置目录中找到，路径为：&lt;code&gt;/Users/mac/Library/Application Support/Thunder/etm3/etm_map.db&lt;/code&gt;，表名为&lt;code&gt;etm_task&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;CREATE TABLE etm_task (
+  taskid interger primary key,
+  state interger default 0,
+  create_time interger default 0,
+  update_time interger default 0,
+  finish_time interger default 0,
+  type interger default 0,
+  create_param text default &apos;&apos;,
+  sub_task_info text default &apos;&apos;,
+  in_rubbish interger default 0,
+  favour interger default 0,
+  group_task interger default 0,
+  platform interger default 0,
+  bt_task_info text default &apos;&apos;,
+  origin_bytes interger default 0,
+  server_bytes interger default 0,
+  p2p_Bytes interger default 0,
+  dcdn_Bytes interger default 0
+)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;关键字段为&lt;code&gt;create_param&lt;/code&gt;，样例数据如下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{&quot;download_path&quot;:&quot;/Users/mac/Downloads&quot;,&quot;file_name&quot;:&quot;panther-ap4a.241205.013-factory-3fe89b24.zip&quot;,&quot;url&quot;:&quot;https://dl.google.com/dl/android/aosp/panther-ap4a.241205.013-factory-3fe89b24.zip&quot;,&quot;ref_url&quot;:&quot;https://developers.google.com/&quot;,&quot;cookie&quot;:&quot;xxx&quot;,&quot;user_name&quot;:&quot;&quot;,&quot;password&quot;:&quot;&quot;,&quot;source&quot;:&quot;browser/plugin&quot;,&quot;entryid&quot;:&quot;&quot;,&quot;from_type&quot;:1,&quot;file_size&quot;:&quot;0&quot;}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;风险点&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;cookie&lt;/code&gt;字段完全是明文，可能存在泄露风险&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item></channel></rss>
