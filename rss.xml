@@ -231,8 +231,13 @@ int SystemProperties::Update(prop_info* pi, const char* value, unsigned int len)
   return 0;
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2&gt;4.2. system_ext属性&lt;/h2&gt;
-&lt;p&gt;经验证，通过&lt;code&gt;AndroidBox&lt;/code&gt;同样可以修改&lt;code&gt;/system_ext/etc/build.prop&lt;/code&gt;中的属性。&lt;/p&gt;
+&lt;h2&gt;4.2. system_ext属性不一致&lt;/h2&gt;
+&lt;p&gt;经验证，通过&lt;code&gt;AndroidBox&lt;/code&gt;同样可以修改&lt;code&gt;/system_ext/etc/build.prop&lt;/code&gt;中的属性。但是由于其文件属性问题，会导致与初始值不一致：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;panther:/ # ls -al /system_ext/etc/build.prop
+-rw-r--r-- 1 root root 999 2009-01-01 08:00 /system_ext/etc/build.prop
+panther:/ # ls -al /system/build.prop
+-rw------- 1 root root 4562 2009-01-01 08:00 /system/build.prop
+&lt;/code&gt;&lt;/pre&gt;
 &lt;h1&gt;5. 挖坑&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;/system/lib64/libbase.so&lt;/code&gt;的真正用途需要进一步分析&lt;/p&gt;
 &lt;h1&gt;6. 参考文献&lt;/h1&gt;
