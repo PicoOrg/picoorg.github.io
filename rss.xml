@@ -39,6 +39,207 @@
 &lt;li&gt;&lt;a href=&quot;https://tech.meituan.com/2017/09/14/android-binde-kcon.html&quot;&gt;Android Binder漏洞挖掘技术与案例分享&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://colbert337.github.io/2015/08/24/android-attack-surface/&quot;&gt;Android Attack Surface&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</content:encoded></item><item><title>AndroidBox-01-修改SystemProperty</title><link>https://picoorg.github.io/posts/androidbox-01-%E4%BF%AE%E6%94%B9systemproperty/</link><guid isPermaLink="true">https://picoorg.github.io/posts/androidbox-01-%E4%BF%AE%E6%94%B9systemproperty/</guid><description>AndroidBox第一个模块，仅需root权限可修改任意SystemProperty。</description><pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 简介&lt;/h1&gt;
+&lt;p&gt;在做&lt;code&gt;Android&lt;/code&gt;安全研究时，免不了对系统&lt;code&gt;build.prop&lt;/code&gt;属性进行修改。常见修改方法有:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;使用&lt;code&gt;mprop&lt;/code&gt;工具&lt;/li&gt;
+&lt;li&gt;使用&lt;code&gt;magisk&lt;/code&gt;自带的命令&lt;code&gt;resetprop&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;安装&lt;code&gt;magisk&lt;/code&gt;或&lt;code&gt;kernelsu&lt;/code&gt;的相关模块&lt;/li&gt;
+&lt;li&gt;手动修改&lt;code&gt;framework&lt;/code&gt;源码后编译&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;其中，方法1主要采用的是&lt;code&gt;init&lt;/code&gt;进程内存修改&lt;code&gt;bypass&lt;/code&gt;，方法2和4的原理都是对&lt;code&gt;framework&lt;/code&gt;源码进行修改，方法3根据模块不同有不同的原理。本文主要针对方法1展开分析。&lt;/p&gt;
+&lt;h1&gt;2. 原理&lt;/h1&gt;
+&lt;p&gt;在看雪大佬&lt;a href=&quot;https://bbs.kanxue.com/thread-246081.htm&quot;&gt;文章&lt;/a&gt;中，回复楼层出现了&lt;code&gt;mprop&lt;/code&gt;其他&lt;a href=&quot;https://gist.github.com/pinohans/96962ccc8708467ca319df9b5bbec57d&quot;&gt;实现代码&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;对&lt;code&gt;Android&lt;/code&gt;源码分析发现，设备对应&lt;code&gt;pixel7&lt;/code&gt;的&lt;code&gt;android14&lt;/code&gt;版本，设置属性函数&lt;code&gt;__system_property_set&lt;/code&gt;最终会调用到&lt;code&gt;init&lt;/code&gt;进程中的&lt;code&gt;property_service&lt;/code&gt;的&lt;code&gt;PropertySet&lt;/code&gt;函数，流程如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;ndk __system_property_set
+
+1 =&amp;gt; /system/lib64/libc.so
+bionic/libc/bionic/system_property_set.cpp __system_property_set
+
+2 =&amp;gt; /system/bin/init
+system/core/init/property_service.cpp handle_property_set_fd
+
+3 =&amp;gt; /system/bin/init
+system/core/init/property_service.cpp HandlePropertySet()
+
+4 =&amp;gt; /system/bin/init
+system/core/init/property_service.cpp PropertySet
+
+5 =&amp;gt; /system/lib64/bootstrap/libc.so
+bionic/libc/bionic/system_property_api.cpp __system_property_update
+
+6 =&amp;gt; /system/lib64/bootstrap/libc.so
+bionic/libc/system_properties/system_properties.cpp SystemProperties::Update
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;调用&lt;code&gt;ndk&lt;/code&gt;函数&lt;code&gt;__system_property_set&lt;/code&gt;设置属性，会先判断&lt;code&gt;g_propservice_protocol_version&lt;/code&gt;值，根据版本调用不同发送方式，后文以&lt;code&gt;kProtocolVersion2&lt;/code&gt;为例。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// bionic/libc/bionic/system_property_set.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:bionic/libc/bionic/system_property_set.cpp
+__BIONIC_WEAK_FOR_NATIVE_BRIDGE
+int __system_property_set(const char* key, const char* value) {
+...
+  if (g_propservice_protocol_version == kProtocolVersion1) { // g_propservice_protocol_version取ro.property_service.version值，大或等于2是kProtocolVersion2，否则是kProtocolVersion1
+...
+    prop_msg msg;
+    memset(&amp;amp;msg, 0, sizeof msg);
+    msg.cmd = PROP_MSG_SETPROP;
+    strlcpy(msg.name, key, sizeof msg.name);
+    strlcpy(msg.value, value, sizeof msg.value);
+
+    return send_prop_msg(&amp;amp;msg);
+  } else {
+...
+    PropertyServiceConnection connection(key);
+...
+    SocketWriter writer(&amp;amp;connection);
+    if (!writer.WriteUint32(PROP_MSG_SETPROP2).WriteString(key).WriteString(value).Send()) {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;system/core/init/property_service.cpp&lt;/code&gt;里函数&lt;code&gt;handle_property_set_fd&lt;/code&gt;处理&lt;code&gt;socket&lt;/code&gt;数据，进入&lt;code&gt;PROP_MSG_SETPROP2&lt;/code&gt;分支，接收数据后调用&lt;code&gt;HandlePropertySet&lt;/code&gt;函数&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// system/core/init/property_service.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:system/core/init/property_service.cpp
+static void handle_property_set_fd(int fd) {
+...
+    int s = accept4(fd, nullptr, nullptr, SOCK_CLOEXEC);
+...
+    if (getsockopt(s, SOL_SOCKET, SO_PEERCRED, &amp;amp;cr, &amp;amp;cr_size) &amp;lt; 0) {
+...
+    SocketConnection socket(s, cr);
+...
+    if (!socket.RecvUint32(&amp;amp;cmd, &amp;amp;timeout_ms)) {
+...
+    switch (cmd) {
+...
+    case PROP_MSG_SETPROP2: {
+        std::string name;
+        std::string value;
+        if (!socket.RecvString(&amp;amp;name, &amp;amp;timeout_ms) ||
+            !socket.RecvString(&amp;amp;value, &amp;amp;timeout_ms)) {
+...
+        auto result = HandlePropertySet(name, value, source_context, cr, &amp;amp;socket, &amp;amp;error);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在函数&lt;code&gt;HandlePropertySet&lt;/code&gt;处理权限校验及特殊系统属性，最后进入&lt;code&gt;PropertySet&lt;/code&gt;函数&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// system/core/init/property_service.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:system/core/init/property_service.cpp
+std::optional&amp;lt;uint32_t&amp;gt; HandlePropertySet(const std::string&amp;amp; name, const std::string&amp;amp; value,
+                                          const std::string&amp;amp; source_context, const ucred&amp;amp; cr,
+                                          SocketConnection* socket, std::string* error) {
+    if (auto ret = CheckPermissions(name, value, source_context, cr, error); ret != PROP_SUCCESS) {
+...
+    if (StartsWith(name, &quot;ctl.&quot;)) {
+        return {SendControlMessage(name.c_str() + 4, value, cr.pid, socket, error)};
+    }
+... // 特殊处理sys.powerctl，其作用是设备重启，但目前userspace已经弃用了，aosp会记录设备关机的原因
+... // 特殊处理selinux.restorecon_recursive，如果来自非init进程，且value不为空，触发异步恢复SELinux，如果来自init进程，会导致执行时间过长
+    return PropertySet(name, value, socket, error);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在函数&lt;code&gt;PropertySet&lt;/code&gt;处理属性修改，如果&lt;code&gt;prop&lt;/code&gt;存在进行&lt;code&gt;__system_property_update&lt;/code&gt;修改，否则进行&lt;code&gt;__system_property_add&lt;/code&gt;添加&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// system/core/init/property_service.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:system/core/init/property_service.cpp
+static std::optional&amp;lt;uint32_t&amp;gt; PropertySet(const std::string&amp;amp; name, const std::string&amp;amp; value,
+                                           SocketConnection* socket, std::string* error) {
+...
+        prop_info* pi = (prop_info*)__system_property_find(name.c_str());
+        if (pi != nullptr) {
+            // ro.* properties are actually &quot;write-once&quot;.
+            if (StartsWith(name, &quot;ro.&quot;)) { // ro属性校验
+                *error = &quot;Read-only property was already set&quot;;
+                return {PROP_ERROR_READ_ONLY_PROPERTY};
+            }
+
+            __system_property_update(pi, value.c_str(), valuelen);
+        } else {
+            int rc = __system_property_add(name.c_str(), name.size(), value.c_str(), valuelen);
+            if (rc &amp;lt; 0) {
+                *error = &quot;__system_property_add failed&quot;;
+                return {PROP_ERROR_SET_FAILED};
+            }
+        }
+... // 处理需要持久化的persist.和next_boot.属性，并进行属性修改通知
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;bionic/libc/bionic/system_property_api.cpp&lt;/code&gt;里函数&lt;code&gt;__system_property_update&lt;/code&gt;调用&lt;code&gt;SystemProperties::Update&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// bionic/libc/bionic/system_property_api.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:bionic/libc/bionic/system_property_api.cpp
+static SystemProperties system_properties;
+...
+__BIONIC_WEAK_FOR_NATIVE_BRIDGE
+int __system_property_update(prop_info* pi, const char* value, unsigned int len) {
+  return system_properties.Update(pi, value, len);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ol&gt;
+&lt;li&gt;在&lt;code&gt;bionic/libc/system_properties/system_properties.cpp&lt;/code&gt;里函数&lt;code&gt;SystemProperties::Update&lt;/code&gt;最终将&lt;code&gt;value&lt;/code&gt;写入&lt;code&gt;prop_area&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code&gt;// bionic/libc/system_properties/system_properties.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:bionic/libc/system_properties/system_properties.cpp
+int SystemProperties::Update(prop_info* pi, const char* value, unsigned int len) {
+...
+  prop_area* pa = contexts_-&amp;gt;GetPropAreaForName(pi-&amp;gt;name);
+  prop_area* override_pa =
+      have_override ? appcompat_override_contexts_-&amp;gt;GetPropAreaForName(pi-&amp;gt;name) : nullptr;
+...
+  auto* override_pi = const_cast&amp;lt;prop_info*&amp;gt;(have_override ? override_pa-&amp;gt;find(pi-&amp;gt;name) : nullptr);
+...
+  memcpy(pa-&amp;gt;dirty_backup_area(), pi-&amp;gt;value, old_len + 1);
+  if (have_override) {
+    memcpy(override_pa-&amp;gt;dirty_backup_area(), override_pi-&amp;gt;value, old_len + 1);
+  }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1&gt;3. 实现&lt;/h1&gt;
+&lt;p&gt;一种比较暴力的思路，发现&lt;code&gt;init&lt;/code&gt;进程中，只有&lt;code&gt;PropertySet&lt;/code&gt;函数会校验&lt;code&gt;ro.&lt;/code&gt;属性，并且通过检索发现&lt;code&gt;init modules&lt;/code&gt;中只有一个位置包含字符串&lt;code&gt;ro.\x00&lt;/code&gt;于是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;非&lt;code&gt;ro.&lt;/code&gt;属性：很简单，只要调用&lt;code&gt;__system_property_set&lt;/code&gt;；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;ro.&lt;/code&gt;属性：利用&lt;code&gt;ptrace&lt;/code&gt;的&lt;code&gt;Attach&lt;/code&gt;进程 -&amp;gt; &lt;code&gt;PeekData&lt;/code&gt;定位 -&amp;gt; &lt;code&gt;PokeData&lt;/code&gt;修改，篡改校验规则后调用&lt;code&gt;__system_property_set&lt;/code&gt;，在成功后恢复现场；&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h1&gt;4. 其他细节&lt;/h1&gt;
+&lt;p&gt;根据&lt;code&gt;baihong&lt;/code&gt;大佬提醒，&lt;code&gt;__system_property_set&lt;/code&gt;调用会产生痕迹，修改&lt;code&gt;/system_ext/etc/build.prop&lt;/code&gt;属性可能表现与&lt;code&gt;/system/build.prop&lt;/code&gt;不一致。&lt;/p&gt;
+&lt;h2&gt;4.1. __system_property_set执行影响&lt;/h2&gt;
+&lt;p&gt;根据提示位置&lt;code&gt;system/libbase/properties.cpp&lt;/code&gt;，代码在&lt;code&gt;/system/lib64/libbase.so&lt;/code&gt;，发现与「原理」章节流程中第6步不一致，实际未调用。但&lt;code&gt;serial&lt;/code&gt;值确实会增加：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;// bionic/libc/system_properties/system_properties.cpp
+// https://cs.android.com/android/platform/superproject/main/+/0aee4d97c97a87812f9764920f54b40de6958f1c:bionic/libc/system_properties/system_properties.cpp
+int SystemProperties::Update(prop_info* pi, const char* value, unsigned int len) {
+...
+  uint32_t serial = atomic_load_explicit(&amp;amp;pi-&amp;gt;serial, memory_order_relaxed);
+...
+  serial |= 1;
+...
+  int new_serial = (len &amp;lt;&amp;lt; 24) | ((serial + 1) &amp;amp; 0xffffff);
+  atomic_store_explicit(&amp;amp;pi-&amp;gt;serial, new_serial, memory_order_relaxed);
+  if (have_override) {
+    atomic_store_explicit(&amp;amp;override_pi-&amp;gt;serial, new_serial, memory_order_relaxed);
+  }
+  __futex_wake(&amp;amp;pi-&amp;gt;serial, INT32_MAX);  // Fence by side effect
+  atomic_store_explicit(serial_pa-&amp;gt;serial(),
+                        atomic_load_explicit(serial_pa-&amp;gt;serial(), memory_order_relaxed) + 1,
+                        memory_order_release);
+  if (have_override) {
+    atomic_store_explicit(override_serial_pa-&amp;gt;serial(),
+                          atomic_load_explicit(serial_pa-&amp;gt;serial(), memory_order_relaxed) + 1,
+                          memory_order_release);
+  }
+  __futex_wake(serial_pa-&amp;gt;serial(), INT32_MAX);
+
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;4.2. system_ext属性&lt;/h2&gt;
+&lt;p&gt;经验证，通过&lt;code&gt;AndroidBox&lt;/code&gt;同样可以修改&lt;code&gt;/system_ext/etc/build.prop&lt;/code&gt;中的属性。&lt;/p&gt;
+&lt;h1&gt;5. 挖坑&lt;/h1&gt;
+&lt;p&gt;&lt;code&gt;/system/lib64/libbase.so&lt;/code&gt;的真正用途需要进一步分析&lt;/p&gt;
+&lt;h1&gt;6. 参考文献&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://bbs.kanxue.com/thread-246081.htm&quot;&gt;android ro.debuggable属性调试修改(mprop逆向)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/jinmie0193/article/details/111355867&quot;&gt;Android修改ro.debuggable 的四种方法&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>Android逆向指路</title><link>https://picoorg.github.io/posts/android%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</guid><pubDate>Tue, 05 Nov 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 预备知识&lt;/h1&gt;
 &lt;h2&gt;1.1. Android 版本相关&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&quot;https://source.android.com/docs/setup/reference/build-numbers&quot;&gt;Android 代号、标记和 build 号&lt;/a&gt;&lt;/p&gt;
@@ -181,6 +382,224 @@ $ fastboot vivo_bsp lock_vivo
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
+&lt;h1&gt;3. 调试相关&lt;/h1&gt;
+&lt;p&gt;通常在用IDA调试android dex时，如果程序的debugable选项未开启，则无法进行smali调试，以往通常有两种做法：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;修改系统ro.debugable&lt;/li&gt;
+&lt;li&gt;修改程序debuggable选项&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;如果采用方法一，同时可以对系统进程进行调试。&lt;/p&gt;
+&lt;h2&gt;3.1. 系统调试&lt;/h2&gt;
+&lt;h3&gt;3.1.1. mprop&lt;/h3&gt;
+&lt;p&gt;mprop基本原理为：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;找到&lt;code&gt;init&lt;/code&gt;代码段&lt;/li&gt;
+&lt;li&gt;查找静态字符串&lt;code&gt;72 6F 2E 00  == ro.\0&lt;/code&gt;，改成其他值，绕过&lt;/li&gt;
+&lt;li&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;mprop源码如下&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;/**
+ * Copyright (C) 2018 netsniffer
+ * mprop v1.0, 2017/01/19
+ * https://bbs.pediy.com/thread-215311.htm
+ */
+ 
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;ctype.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;errno.h&amp;gt;
+#include &amp;lt;memory.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+#include &amp;lt;sys/ptrace.h&amp;gt;
+#include &amp;lt;sys/system_properties.h&amp;gt;
+ 
+#define PROP_NAME_MAX   32
+#define PROP_VALUE_MAX  92
+ 
+static void dump_hex(const char* buf, int len)
+{
+    const uint8_t *data = (const uint8_t*)buf;
+    int i;
+    char ascii_buf[17];
+ 
+    ascii_buf[16] = &apos;\0&apos;;
+ 
+    for (i = 0; i &amp;lt; len; i++) {
+        int val = data[i];
+        int off = i % 16;
+ 
+        if (off == 0)
+            printf(&quot;%08x  &quot;, i);
+        printf(&quot;%02x &quot;, val);
+        ascii_buf[off] = isprint(val) ? val : &apos;.&apos;;
+        if (off == 15)
+            printf(&quot; %-16s\n&quot;, ascii_buf);
+    }
+ 
+    i %= 16;
+    if (i) {
+        ascii_buf[i] = &apos;\0&apos;;
+        while (i++ &amp;lt; 16)
+            printf(&quot;   &quot;);
+        printf(&quot; %-16s\n&quot;, ascii_buf);
+    }
+}
+ 
+#define ORI_INST  0x2e6f72
+#define HACK_INST 0x2e6f73
+ 
+int main(int argc, char **argv) 
+{
+    FILE *fp;
+    int  m, rc;
+    int  patch_count;
+    unsigned long maps, mape, addr, mlen;
+    unsigned long real_val, real_vaddr;
+ 
+    char perms[5];
+    char line[512];
+    char *buffer, *ro;
+    char* name = NULL, *value = NULL;
+ 
+    uint32_t tmp;
+    uint32_t dest_inst = ORI_INST;
+    uint32_t mod_inst = HACK_INST;
+ 
+    int restore = 0, verbose = 0;
+ 
+    for (m = 1; m &amp;lt; argc; m++) {
+        if (argv[m] == NULL)
+            continue;
+ 
+        if (argv[m][0] != &apos;-&apos;) {
+            break;
+        } 
+ 
+        if (argv[m][1] == &apos;r&apos;) {
+            restore = 1;
+            dest_inst = HACK_INST;
+            mod_inst = ORI_INST;
+        } else if (argv[m][1] == &apos;v&apos;) {
+            verbose = 1;
+        }
+    }
+ 
+    if (restore) {
+        fprintf(stderr, &quot;restore ...\n&quot;); 
+    }
+    else {
+        if (argc - m &amp;gt;= 2) {
+            // fprintf(stderr, &quot;Usage: %s [-r] [-v] [prop_name] [prop_value]\n&quot;
+            //                 &quot;e.g.:  %s ro.debuggable 1\n&quot;, argv[0], argv[0]);
+            name = argv[m];
+            value = argv[m+1];
+        } 
+        
+        fprintf(stderr, &quot;start hacking ...\n&quot;); 
+    }
+     
+    fp = fopen(&quot;/proc/1/maps&quot;, &quot;r&quot;);
+    if (!fp) {
+        perror(&quot;!! fopen &quot;);
+        return 1;
+    }
+ 
+    // 00008000-000cb000 r-xp 00000000 00:01 6999       /init
+    memset(line, 0, sizeof(line));
+    while (fgets(line, sizeof(line), fp)) {
+        int main_exe = (strstr(line, &quot;/init&quot;) != NULL) ? 1 : 0;
+        if (main_exe) {
+            rc = sscanf(line, &quot;%lx-%lx %4s &quot;, &amp;amp;maps, &amp;amp;mape, perms);
+            if (rc &amp;lt; 3) {
+                perror(&quot;!! sscanf &quot;);
+                return 1;
+            }
+            if (perms[0] == &apos;r&apos; &amp;amp;&amp;amp; perms[1] == &apos;-&apos; &amp;amp;&amp;amp; perms[2] == &apos;x&apos; &amp;amp;&amp;amp; perms[3] == &apos;p&apos;) {
+                break;    
+            }
+        }
+    }
+    fclose(fp);
+ 
+    fprintf(stderr, &quot;target mapped area: 0x%lx-0x%lx\n&quot;, maps, mape); 
+ 
+    mlen = mape - maps;
+    buffer = (char *) calloc(1, mlen + 16);
+    if (!buffer) {
+        perror(&quot;!! malloc &quot;);
+        return 1;
+    }
+    rc = ptrace(PTRACE_ATTACH, 1, 0, 0);
+    if (rc &amp;lt; 0) {
+        perror(&quot;!! ptrace &quot;);
+        return rc;
+    }
+    for (addr = maps; addr &amp;lt; mape; addr += 4) {
+        tmp = ptrace(PTRACE_PEEKTEXT, 1, (void *) addr, 0);
+        *((uint32_t*)(buffer + addr - maps)) = tmp;
+    }
+     
+    if (verbose) {
+        dump_hex(buffer, mlen);
+    }
+   
+    for (m = 0; m &amp;lt; mlen; ++m) {
+        if (dest_inst == *(uint32_t*)(buffer+m)) { // 72 6F 2E 00  == ro.\0
+            break;
+        }
+    }
+ 
+    if (m &amp;gt;= mlen) {
+        fprintf(stderr, &quot;&amp;gt;&amp;gt; inject position not found, may be already patched!\n&quot;);
+    } 
+    else {
+        real_vaddr = maps + m;
+        real_val = *(uint32_t*)(buffer+m);
+        fprintf(stderr, &quot;&amp;gt;&amp;gt; patching at: 0x%lx [0x%lx -&amp;gt; 0x%08x]\n&quot;, real_vaddr, real_val, mod_inst);
+         
+        tmp = mod_inst;
+        rc = ptrace(PTRACE_POKETEXT, 1, (void *)real_vaddr, (void*)tmp);
+        if (rc &amp;lt; 0) {
+            perror(&quot;!! patching failed &quot;);
+        }
+ 
+        tmp = ptrace(PTRACE_PEEKTEXT, 1, (void *)real_vaddr, 0);
+        fprintf(stderr, &quot;&amp;gt;&amp;gt; %s reread: [0x%lx] =&amp;gt; 0x%08x\n&quot;, restore ? &quot;restored!&quot; : &quot;patched!&quot;, real_vaddr, tmp);       
+    }
+ 
+    free(buffer);
+    rc = ptrace(PTRACE_DETACH, 1, 0, 0);
+ 
+    if (!restore &amp;amp;&amp;amp; (name &amp;amp;&amp;amp; value &amp;amp;&amp;amp; name[0] != 0)) {
+        char propbuf[PROP_VALUE_MAX];
+        fprintf(stderr, &quot;-- setprop: [%s] = [%s]\n&quot;, name, value);
+        __system_property_set(name, value);
+        usleep(400000);
+        __system_property_get(name, propbuf);
+        fprintf(stderr, &quot;++ getprop: [%s] = [%s]\n&quot;, name, propbuf);
+         
+    }
+    return rc;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;内存修改&lt;/h3&gt;
+&lt;p&gt;基本原理可以参考&lt;a href=&quot;https://bbs.kanxue.com/thread-246081.htm&quot;&gt;看雪文章&lt;/a&gt;，实现方式是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;通过附加到&lt;code&gt;init&lt;/code&gt;进程&lt;/li&gt;
+&lt;li&gt;然后找到&lt;code&gt;/dev/__properties__&lt;/code&gt;所在&lt;code&gt;Segment&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;根据内存布局找到属性名位置，如&lt;code&gt;ro.debuggable&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;根据偏移找到属性值位置进行修改&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;3.2. 程序调试&lt;/h2&gt;
+&lt;h1&gt;4. 参考文献&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://bbs.kanxue.com/thread-246081.htm&quot;&gt;看雪-android ro.debuggable属性调试修改(mprop逆向) &lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://bbs.kanxue.com/thread-215311.htm&quot;&gt;看雪-修改ro属性的小工具新版本-170119&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://security.tencent.com/index.php/opensource/detail/17&quot;&gt;BDOpener——开启APK调试与备份选项的Xposed模块&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/wpvsyou/mprop&quot;&gt;github.com/wpvsyou/mprop&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/TangGee/mprop&quot;&gt;github.com/TangGee/mprop&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/csfchh/article/details/136424222&quot;&gt;使用ndk-build构建可在Android设备运行的ELF可执行文件&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>攻击Android Binder：CVE-2023-20938 的分析与利用</title><link>https://picoorg.github.io/posts/cve-2023-20938/</link><guid isPermaLink="true">https://picoorg.github.io/posts/cve-2023-20938/</guid><description>本文主要翻译了Google博客内容，水平有限以理解为主。</description><pubDate>Fri, 07 Jun 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;背景&lt;/h1&gt;
 &lt;p&gt;本文分析了如何利用&lt;code&gt;CVE-2023-20938&lt;/code&gt;漏洞进行&lt;code&gt;Android Binder&lt;/code&gt;攻击，该漏洞是&lt;code&gt;Binder&lt;/code&gt;设备驱动的&lt;code&gt;UAF&lt;/code&gt;漏洞，最终以非可信&lt;code&gt;APP&lt;/code&gt;在最新安卓设备上获取&lt;code&gt;root&lt;/code&gt;权限，&lt;code&gt;5.4-5.10&lt;/code&gt;版本的&lt;code&gt;GKI&lt;/code&gt;内核均受影响。&lt;/p&gt;
 &lt;h2&gt;Binder&lt;/h2&gt;
@@ -1263,23 +1682,20 @@ ssh -R 9999:192.168.2.3:9999 root@1.1.1.1
 &lt;h1&gt;2. Android&lt;/h1&gt;
 &lt;h2&gt;2.1. adb&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;adb reboot bootloader              # 进入fastboot
-
 adb shell am start -a android.intent.action.VIEW -d scheme:// # 访问指定url
-
 adb shell settings put global http_proxy 127.0.0.1:9999 # 设置代理
-
 adb shell settings put global http_proxy :0 # 取消代理
-
-setenforce 0 # 关闭SELinux
-
-setprop persist.device_config.runtime_native.usap_pool_enabled false # 关闭usap
-
-settings put system screen_off_timeout 100000000 # 设置屏幕常亮
+adb shell setenforce 0 # 关闭SELinux
+adb shell setprop persist.device_config.runtime_native.usap_pool_enabled false # 关闭usap
+adb shell settings put system screen_off_timeout 100000000 # 设置屏幕常亮
+adb shell settings put global ntp_server pool.ntp.org # pixel内置ntp被墙，设置同步时间服务器
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2&gt;2.2. fastboot&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;fastboot reboot                    # 重启
 fastboot boot boot.img             # 临时进入boot镜像
 fastboot flash boot boot.img       # 刷入boot镜像
+fastboot -w                        # 清除userdata，metadata
+fastboot update &amp;lt;image.zip&amp;gt;        # 刷入zip包
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2&gt;2.3. 逆向&lt;/h2&gt;
 &lt;ol&gt;
@@ -1330,13 +1746,15 @@ if __name__ == &quot;__main__&quot;:
 	main()
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2&gt;2.4. 系统证书&lt;/h2&gt;
-&lt;pre&gt;&lt;code&gt;# 计算证书pem格式的hash
+&lt;pre&gt;&lt;code&gt;# 计算证书pem格式的hash，假设输出为9a5ba575
 openssl x509 -subject_old_hash -in a.pem
-
+# mac
+# openssl x509 -subject_hash_old -in a.pem
 # 重命名&amp;lt;hash&amp;gt;.0
-mv a.pem &amp;lt;hash&amp;gt;.0
-
-# Create a separate temp directory, to hold the current certificates
+mv a.pem 9a5ba575.0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Android &amp;lt;= 13&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;# Create a separate temp directory, to hold the current certificates
 # Without this, when we add the mount we can&apos;t read the current certs anymore.
 mkdir -m 700 /data/local/tmp/htk-ca-copy
 
@@ -1350,7 +1768,7 @@ mount -t tmpfs tmpfs /system/etc/security/cacerts
 mv /data/local/tmp/htk-ca-copy/* /system/etc/security/cacerts/
 
 # Copy our new cert in, so we trust that too
-cp /data/local/tmp/&amp;lt;hash&amp;gt;.0  /system/etc/security/cacerts/
+cp /data/local/tmp/9a5ba575.0  /system/etc/security/cacerts/
 
 # Update the perms &amp;amp; selinux context labels, so everything is as readable as before
 chown root:root /system/etc/security/cacerts/*
@@ -1360,11 +1778,14 @@ chcon u:object_r:system_file:s0 /system/etc/security/cacerts/*
 # Delete the temp cert directory &amp;amp; this script itself
 rm -r /data/local/tmp/htk-ca-copy
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Android &amp;gt;= 14，由于安卓14在证书的路径有变化，参考&lt;a href=&quot;https://weibo.com/3322982490/Ni21tFiR9&quot;&gt;wuxianlin的微博&lt;/a&gt;，新路径在&lt;code&gt;/apex/com.android.conscrypt/cacerts&lt;/code&gt;，需要增加&lt;code&gt;mount -o bind /system/etc/security/cacerts /apex/com.android.conscrypt/cacerts&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;或者直接使用现有&lt;a href=&quot;https://github.com/ys1231/MoveCertificate&quot;&gt;模块&lt;/a&gt;&lt;/p&gt;
 &lt;h2&gt;2.5. pixel刷机&lt;/h2&gt;
 &lt;p&gt;tips:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;网友建议刷机前四清，防止意外阻止刷机&lt;/li&gt;
 &lt;li&gt;线刷相当于底层替换所有镜像，数据不会保留；卡刷相当于更新系统，数据会保留。（个人理解起名卡刷是因为该模式可以选择&lt;code&gt;Apply update from SD card&lt;/code&gt;）&lt;/li&gt;
+&lt;li&gt;降级可以按照线刷的步骤，根据&lt;code&gt;flash-all&lt;/code&gt;脚本，逐步降级&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h3&gt;2.5.1. 双清/四清/六清&lt;/h3&gt;
 &lt;p&gt;★★普通双清★★
@@ -1463,6 +1884,10 @@ rm -r /data/local/tmp/htk-ca-copy
 &lt;h2&gt;5.1. openssl&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;ssh-keygen -y -f ~/.ssh/id_rsa # ssh-keygen导出公钥
 openssl x509 -in a.cer -inform der -out a.pem -outform pem # der to pem
+# 自签名服务器证书
+openssl genrsa -out server.key 2048 # 生成一个私钥文件
+openssl req -new -key server.key -out server.csr # 通用名称 (CN)需要填域名*.example.com
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt # 生成自签名证书
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h1&gt;6. Docker&lt;/h1&gt;
 &lt;h2&gt;6.1. Docker Desktop version on Mac&lt;/h2&gt;
