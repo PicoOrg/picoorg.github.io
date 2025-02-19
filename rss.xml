@@ -40,6 +40,7 @@
 &lt;li&gt;&lt;a href=&quot;https://colbert337.github.io/2015/08/24/android-attack-surface/&quot;&gt;Android Attack Surface&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </content:encoded></item><item><title>AndroidBox-01-修改SystemProperty</title><link>https://picoorg.github.io/posts/androidbox-01-%E4%BF%AE%E6%94%B9systemproperty/</link><guid isPermaLink="true">https://picoorg.github.io/posts/androidbox-01-%E4%BF%AE%E6%94%B9systemproperty/</guid><description>AndroidBox第一个模块，仅需root权限可修改任意SystemProperty。</description><pubDate>Wed, 15 Jan 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 简介&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/PicoOrg/AndroidBox&quot;&gt;Android项目地址&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;在做&lt;code&gt;Android&lt;/code&gt;安全研究时，免不了对系统&lt;code&gt;build.prop&lt;/code&gt;属性进行修改。常见修改方法有:&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;使用&lt;code&gt;mprop&lt;/code&gt;工具&lt;/li&gt;
@@ -245,6 +246,14 @@ panther:/ # ls -al /system/build.prop
 &lt;li&gt;&lt;a href=&quot;https://bbs.kanxue.com/thread-246081.htm&quot;&gt;android ro.debuggable属性调试修改(mprop逆向)&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/jinmie0193/article/details/111355867&quot;&gt;Android修改ro.debuggable 的四种方法&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
+</content:encoded></item><item><title>AndroidBox-02-在Android设备运行libFuzzer</title><link>https://picoorg.github.io/posts/androidbox-02-%E5%9C%A8android%E8%AE%BE%E5%A4%87%E8%BF%90%E8%A1%8Clibfuzzer/</link><guid isPermaLink="true">https://picoorg.github.io/posts/androidbox-02-%E5%9C%A8android%E8%AE%BE%E5%A4%87%E8%BF%90%E8%A1%8Clibfuzzer/</guid><description>AndroidBox的子项目，实现灵活的libFuzzer入口。</description><pubDate>Wed, 19 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;简介&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/PicoOrg/AndroidBox&quot;&gt;Android项目地址&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;说来惭愧，入门&lt;code&gt;Android&lt;/code&gt;安全研究近一年以来，仍停留在审计的初级阶段（产出较少甚至可以说毫无产出），希望能在方法上有进一步提升。同时，又想把之前最薄弱的&lt;code&gt;Fuzz&lt;/code&gt;能力补齐，因此选择了这个切入点作为第二个模块。希望能够为后来的研究者有一丝丝帮助。&lt;/p&gt;
+&lt;h1&gt;使用&lt;/h1&gt;
+&lt;h2&gt;编译&lt;/h2&gt;
+&lt;p&gt;编译过程比较简单&lt;/p&gt;
+&lt;h1&gt;工程化思路&lt;/h1&gt;
+&lt;h1&gt;效果&lt;/h1&gt;
 </content:encoded></item><item><title>Android逆向指路</title><link>https://picoorg.github.io/posts/android%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android%E9%80%86%E5%90%91%E6%8C%87%E8%B7%AF/</guid><pubDate>Tue, 05 Nov 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 预备知识&lt;/h1&gt;
 &lt;h2&gt;1.1. Android 版本相关&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&quot;https://source.android.com/docs/setup/reference/build-numbers&quot;&gt;Android 代号、标记和 build 号&lt;/a&gt;&lt;/p&gt;
