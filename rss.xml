@@ -672,6 +672,11 @@
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://mp.weixin.qq.com/s/0SBm0N99ztl1CuvWaImHzQ&quot;&gt;【全文2.4万字】大模型注入攻击方法汇总&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://zhuanlan.zhihu.com/p/675509396&quot;&gt;一文读懂：大模型RAG（检索增强生成）含高级方法&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://keenlab.tencent.com/zh/2024/04/11/2024-SecCorpus0411/&quot;&gt;SecCorpus: 构建安全领域大模型数据的技术实践&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>Android BAL Bypass攻击面分析</title><link>https://picoorg.github.io/posts/android-bal-bypass%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</link><guid isPermaLink="true">https://picoorg.github.io/posts/android-bal-bypass%E6%94%BB%E5%87%BB%E9%9D%A2%E5%88%86%E6%9E%90/</guid><pubDate>Tue, 03 Sep 2024 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;Android BAL Bypass攻击面分析&lt;/h1&gt;
 &lt;h2&gt;一、Android BAL&lt;/h2&gt;
 &lt;p&gt;后台弹窗(&lt;code&gt;BAL, Background Activity Launch&lt;/code&gt;)在Android 10以前是被允许的，恶意APP利用这种特性，在用户正常使用手机时弹出，和PC端的桌面窗口广告类似，会覆盖整个屏幕或弹窗。比如在进入后台直接唤起自身，代码如下：&lt;/p&gt;
@@ -3380,7 +3385,7 @@ root@localhost&apos;s password:
 &lt;ul&gt;
 &lt;li&gt;CORS：&lt;/li&gt;
 &lt;li&gt;CSRF：&lt;/li&gt;
-&lt;li&gt;RCE：electron、log4shell、shiro&lt;/li&gt;
+&lt;li&gt;RCE：electron、log4shell、shiro、fastjson&lt;/li&gt;
 &lt;li&gt;sql注入：
 &lt;ul&gt;
 &lt;li&gt;order by：if(1=1,1,sleep(1))&lt;/li&gt;
@@ -3557,10 +3562,21 @@ Priority: u=1, i
   &quot;didi.cn&quot;,
   &quot;qingqikeji.com&quot;,
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;https://fofa.info/result?qbase64=ZG9tYWluPSJ4aWFvanVjaGVmdS5jb20i
+https://fofa.info/result?qbase64=ZG9tYWluPSJkaWRpY2h1eGluZy5jb20i&amp;amp;page=1&amp;amp;page_size=50
+https://pnas.fun:50443/taskList/taskDetail?task_id=67c698500b91fc24036f0afc&amp;amp;targetName=xiaojuchefu.com&amp;amp;site_cnt=37&amp;amp;domain_cnt=20&amp;amp;ip_cnt=15&amp;amp;cert_cnt=0&amp;amp;service_cnt=0&amp;amp;fileleak_cnt=0&amp;amp;url_cnt=0&amp;amp;vuln_cnt=0&amp;amp;npoc_service_cnt=0&amp;amp;cip_cnt=6&amp;amp;nuclei_result_cnt=0&amp;amp;stat_finger_cnt=2&amp;amp;wih_cnt=0&lt;/p&gt;
 &lt;h2&gt;参考文献&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.secpulse.com/archives/author/jdsec/page/2&quot;&gt;京东SRC文章列表&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;&lt;a href=&quot;https://www.cnblogs.com/zha0gongz1/p/12732356.html&quot;&gt;绕过XSS过滤姿势总结&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/smxiazi/xia_sql&quot;&gt;smxiazi/xia_sql&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/whwlsfb/Log4j2Scan&quot;&gt;whwlsfb/Log4j2Scan&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.cnblogs.com/tysec/p/17375195.html&quot;&gt;渗透三大件：Burp插件安装&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://yang1k.github.io/post/sql%E6%B3%A8%E5%85%A5%E4%B9%8Border-by%E6%B3%A8%E5%85%A5/&quot;&gt;sql注入之order by注入&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.ascotbe.com/2020/07/24/XXE/&quot;&gt;XXE的一些利用方式&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://research.qianxin.com/archives/2014&quot;&gt;【BlackHat 2024】SystemUI As EvilPiP: 针对现代移动设备的劫持攻击&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://xz.aliyun.com/news/2046?time__1311=eqfx97DtGQitD%3DD%2FD0e5GkzTuwQvozoF4D&amp;amp;u_atoken=0375d39e37605df2f3bebe83ab6eff26&amp;amp;u_asig=1a0c39a017406450086375739e00d4&quot;&gt;Bundle风水——Android序列化与反序列化不匹配漏洞详解&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://xz.aliyun.com/news/16806?u_atoken=fc5695b7997bceb9b789f7b37cbc70f9&amp;amp;u_asig=ac11000117406332283236808e004e&quot;&gt;fastjson高版本二次反序列化绕过&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </content:encoded></item><item><title>业务安全之反爬对抗</title><link>https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%8F%8D%E7%88%AC%E5%AF%B9%E6%8A%97/</link><guid isPermaLink="true">https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%8F%8D%E7%88%AC%E5%AF%B9%E6%8A%97/</guid><pubDate>Fri, 21 Feb 2025 00:00:00 GMT</pubDate><content:encoded/></item><item><title>业务安全之广告反作弊</title><link>https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%B9%BF%E5%91%8A%E5%8F%8D%E4%BD%9C%E5%BC%8A/</link><guid isPermaLink="true">https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%B9%BF%E5%91%8A%E5%8F%8D%E4%BD%9C%E5%BC%8A/</guid><description>未知攻，焉知防，本文以攻击者视角展开分析业务安全广告反作弊基础内容。</description><pubDate>Fri, 21 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 广告反作弊&lt;/h1&gt;
 &lt;p&gt;广告（英语：advertising或advertizing），从狭义上讲是一种市场营销行为，用于劝说阅听人，通常以引发产品或服务购买，即商业广告。另一方面从广义上认识广告，它是一切为了沟通信息、促进认识的广告传播活动，无论是否作用于商业领域，是否将营利作为运作目标，只要具备广告的基本特征，都是广告活动。&lt;/p&gt;
